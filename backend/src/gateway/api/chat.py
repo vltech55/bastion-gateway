@@ -239,28 +239,37 @@ async def chat_stream(
             try:
                 yield {"event": "open", "data": json.dumps({"provider": c.provider, "model": c.model})}
                 buf: list[str] = []
-                async for delta in adapter.chat_stream(
+                prompt_tokens, completion_tokens = 0, 0
+                async for delta, p_tok, c_tok in adapter.chat_stream(
                     ChatRequestInput(
                         model=c.model, messages=messages,
                         max_tokens=body.max_tokens, temperature=body.temperature,
                     )
                 ):
-                    buf.append(delta)
-                    yield {"event": "token", "data": json.dumps({"text": delta})}
+                    if delta:
+                        buf.append(delta)
+                        yield {"event": "token", "data": json.dumps({"text": delta})}
+                    # Sentinel: text-empty chunk carrying the final usage counts.
+                    if p_tok is not None and c_tok is not None:
+                        prompt_tokens, completion_tokens = p_tok, c_tok
                 breakers.record_success(c.provider, c.model)
 
                 elapsed = time.perf_counter() - started
+                cost = compute_cost(c.provider, c.model, prompt_tokens, completion_tokens)
                 REQUEST_LATENCY.labels(c.provider, c.model, "miss").observe(elapsed)
                 REQUESTS_TOTAL.labels(c.provider, c.model, "ok", "miss").inc()
+                REQUEST_TOKENS.labels(c.provider, c.model, "prompt").inc(prompt_tokens)
+                REQUEST_TOKENS.labels(c.provider, c.model, "completion").inc(completion_tokens)
+                REQUEST_COST.labels(c.provider, c.model).inc(cost.total_usd)
 
                 row = RequestRow(
                     api_key_hash=api_key_hash,
                     requested_model=body.model,
                     chosen_provider=c.provider,
                     chosen_model=c.model,
-                    prompt_tokens=0,
-                    completion_tokens=0,
-                    cost_usd=0.0,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    cost_usd=cost.total_usd,
                     latency_ms=round(elapsed * 1000, 2),
                     cache_hit=False,
                     status="ok",
@@ -268,7 +277,15 @@ async def chat_stream(
                 )
                 session.add(row)
                 await session.commit()
-                yield {"event": "done", "data": json.dumps({"latency_ms": round(elapsed * 1000, 2)})}
+                yield {
+                    "event": "done",
+                    "data": json.dumps({
+                        "latency_ms": round(elapsed * 1000, 2),
+                        "prompt_tokens": prompt_tokens,
+                        "completion_tokens": completion_tokens,
+                        "cost_usd": cost.total_usd,
+                    }),
+                }
                 return
             except ProviderUnavailableError as exc:
                 PROVIDER_FAILURES.labels(c.provider, c.model).inc()

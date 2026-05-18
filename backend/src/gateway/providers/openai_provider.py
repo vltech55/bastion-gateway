@@ -11,6 +11,7 @@ from gateway.providers.base import (
     ChatRequestInput,
     ChatResponse,
     ProviderUnavailableError,
+    StreamChunk,
 )
 
 
@@ -52,7 +53,7 @@ class OpenAIAdapter:
             model=req.model,
         )
 
-    async def chat_stream(self, req: ChatRequestInput) -> AsyncIterator[str]:
+    async def chat_stream(self, req: ChatRequestInput) -> AsyncIterator[StreamChunk]:
         client = _client()
         try:
             stream = await client.chat.completions.create(
@@ -61,10 +62,19 @@ class OpenAIAdapter:
                 max_tokens=req.max_tokens,
                 temperature=req.temperature,
                 stream=True,
+                # Without this flag OpenAI omits `usage` from streaming chunks. With it,
+                # the final chunk carries final prompt/completion token counts.
+                stream_options={"include_usage": True},
             )
         except Exception as exc:
             raise ProviderUnavailableError(f"openai stream open failed: {exc}") from exc
+
+        prompt_tokens, completion_tokens = 0, 0
         async for chunk in stream:
             for c in chunk.choices:
                 if c.delta and c.delta.content:
-                    yield c.delta.content
+                    yield c.delta.content, None, None
+            if chunk.usage is not None:
+                prompt_tokens = chunk.usage.prompt_tokens
+                completion_tokens = chunk.usage.completion_tokens
+        yield "", prompt_tokens, completion_tokens

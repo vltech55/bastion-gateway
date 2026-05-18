@@ -11,6 +11,7 @@ from gateway.providers.base import (
     ChatRequestInput,
     ChatResponse,
     ProviderUnavailableError,
+    StreamChunk,
 )
 
 
@@ -55,7 +56,7 @@ class AnthropicAdapter:
             model=req.model,
         )
 
-    async def chat_stream(self, req: ChatRequestInput) -> AsyncIterator[str]:
+    async def chat_stream(self, req: ChatRequestInput) -> AsyncIterator[StreamChunk]:
         client = _client()
         system, messages = _split_system(req.messages)
         try:
@@ -67,6 +68,12 @@ class AnthropicAdapter:
                 messages=messages,
             ) as stream:
                 async for text in stream.text_stream:
-                    yield text
+                    yield text, None, None
+                # Final message carries the authoritative usage counts; pulled after the
+                # text stream drains so we can attribute cost on the sentinel yield.
+                final = await stream.get_final_message()
+                yield "", final.usage.input_tokens, final.usage.output_tokens
+        except ProviderUnavailableError:
+            raise
         except Exception as exc:
             raise ProviderUnavailableError(f"anthropic stream failed: {exc}") from exc

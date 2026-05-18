@@ -34,9 +34,17 @@ class ProviderUnavailableError(RuntimeError):
     The router catches this and falls through to the next candidate in the chain."""
 
 
+StreamChunk = tuple[str, int | None, int | None]
+"""Yielded by `chat_stream`. Each tuple is (text_delta, prompt_tokens, completion_tokens).
+
+Text-only deltas have None for both token fields. The final chunk (sentinel) carries
+the final usage counts and has empty text — callers should use it to attribute cost
+and persist a usage record, rather than estimating tokens by re-counting deltas."""
+
+
 class ProviderAdapter(Protocol):
     name: str
     supports_streaming: bool
 
     async def chat(self, req: ChatRequestInput) -> ChatResponse: ...
-    async def chat_stream(self, req: ChatRequestInput) -> AsyncIterator[str]: ...
+    async def chat_stream(self, req: ChatRequestInput) -> AsyncIterator[StreamChunk]: ...

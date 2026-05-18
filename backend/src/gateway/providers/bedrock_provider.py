@@ -12,6 +12,7 @@ from gateway.providers.base import (
     ChatRequestInput,
     ChatResponse,
     ProviderUnavailableError,
+    StreamChunk,
 )
 
 
@@ -79,7 +80,7 @@ class BedrockAdapter:
             model=req.model,
         )
 
-    async def chat_stream(self, req: ChatRequestInput) -> AsyncIterator[str]:
+    async def chat_stream(self, req: ChatRequestInput) -> AsyncIterator[StreamChunk]:
         client = _client()
         body = _to_anthropic_body(req)
         try:
@@ -93,9 +94,12 @@ class BedrockAdapter:
             raise ProviderUnavailableError(f"bedrock stream failed: {exc}") from exc
 
         # boto3 returns a blocking iterator; pump it through a worker thread to keep
-        # the event loop responsive.
+        # the event loop responsive. Usage on Bedrock's Anthropic stream is split:
+        # message_start carries input_tokens, message_delta carries cumulative
+        # output_tokens. We surface both on the sentinel yield at end.
         loop = asyncio.get_running_loop()
         it = iter(stream)
+        prompt_tokens, completion_tokens = 0, 0
         while True:
             event = await loop.run_in_executor(None, lambda: next(it, None))
             if event is None:
@@ -104,6 +108,15 @@ class BedrockAdapter:
             if not chunk:
                 continue
             obj = json.loads(chunk)
-            delta = obj.get("delta", {})
-            if delta.get("type") == "text_delta":
-                yield delta.get("text", "")
+            ev_type = obj.get("type")
+            if ev_type == "content_block_delta":
+                delta = obj.get("delta", {})
+                if delta.get("type") == "text_delta":
+                    yield delta.get("text", ""), None, None
+            elif ev_type == "message_start":
+                usage = obj.get("message", {}).get("usage", {})
+                prompt_tokens = int(usage.get("input_tokens", prompt_tokens))
+            elif ev_type == "message_delta":
+                usage = obj.get("usage", {})
+                completion_tokens = int(usage.get("output_tokens", completion_tokens))
+        yield "", prompt_tokens, completion_tokens
