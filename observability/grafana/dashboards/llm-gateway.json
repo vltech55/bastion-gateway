@@ -1,0 +1,113 @@
+{
+  "uid": "llm-gateway",
+  "title": "LLM Gateway",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Requests/sec",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(gateway_requests_total[1m]))", "refId": "A" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Cache hit rate",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } },
+      "targets": [
+        {
+          "expr": "sum(rate(gateway_cache_hits_total[5m])) / (sum(rate(gateway_cache_hits_total[5m])) + sum(rate(gateway_cache_misses_total[5m])))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Cost (USD, 1h)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 } },
+      "targets": [
+        { "expr": "sum(increase(gateway_request_cost_usd_total[1h]))", "refId": "A" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Open circuits",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "sum(gateway_circuit_open)", "refId": "A" }]
+    },
+
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Request latency (s) by provider",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (provider, le) (rate(gateway_request_latency_seconds_bucket[5m])))", "legendFormat": "p50 {{provider}}", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum by (provider, le) (rate(gateway_request_latency_seconds_bucket[5m])))", "legendFormat": "p95 {{provider}}", "refId": "B" },
+        { "expr": "histogram_quantile(0.99, sum by (provider, le) (rate(gateway_request_latency_seconds_bucket[5m])))", "legendFormat": "p99 {{provider}}", "refId": "C" }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Gateway overhead (s) — uncached path",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(gateway_overhead_seconds_bucket{cache=\"miss\"}[5m])))", "legendFormat": "p50", "refId": "A" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(gateway_overhead_seconds_bucket{cache=\"miss\"}[5m])))", "legendFormat": "p95", "refId": "B" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(gateway_overhead_seconds_bucket{cache=\"miss\"}[5m])))", "legendFormat": "p99", "refId": "C" }
+      ]
+    },
+
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Requests by provider+model",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "targets": [
+        { "expr": "sum by (provider, model) (rate(gateway_requests_total[1m]))", "legendFormat": "{{provider}}:{{model}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Failure rate by provider",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "sum by (provider) (rate(gateway_provider_failures_total[5m]))", "legendFormat": "{{provider}}", "refId": "A" }
+      ]
+    },
+
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "Tokens (prompt vs completion) /sec",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "targets": [
+        { "expr": "sum by (kind) (rate(gateway_tokens_total[1m]))", "legendFormat": "{{kind}}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Cumulative cost (USD) by provider",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "targets": [
+        { "expr": "sum by (provider) (rate(gateway_request_cost_usd_total[5m]))", "legendFormat": "{{provider}}", "refId": "A" }
+      ]
+    }
+  ]
+}

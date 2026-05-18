@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+  namespace: llm-gateway
+data:
+  CACHE_TTL_SECONDS: "86400"
+  CACHE_TEMP_THRESHOLD: "0.0"
+  RATE_LIMIT_TOKENS: "120"
+  RATE_LIMIT_REFILL_PER_SEC: "2.0"
+  CIRCUIT_BREAKER_FAILURES: "3"
+  CIRCUIT_BREAKER_COOLDOWN_SECONDS: "30"
+  LOG_LEVEL: "INFO"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8080"
