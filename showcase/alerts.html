@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Alerts · Bastion Gateway</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230f172a'/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1018;
+  --panel: #111824;
+  --panel-2: #161e2c;
+  --ink: #e6edf7;
+  --ink-2: #c1cbdb;
+  --muted: #7d8aa1;
+  --subtle: #525d75;
+  --border: #1d2738;
+  --border-strong: #2a3548;
+  --accent: #22d3ee;
+  --emerald: #34d399;
+  --amber: #fbbf24;
+  --rose: #fb7185;
+  --indigo: #818cf8;
+  --pink: #f472b6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.5; }
+code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+.tab { font-variant-numeric: tabular-nums; }
+
+.topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 9px 22px; display: flex; align-items: center; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #0ea5e9, #6366f1); display:flex; align-items:center; justify-content:center; color:white; box-shadow: 0 0 12px rgba(99,102,241,0.5); }
+.brand-name { font-size: 15px; font-weight: 600; }
+.brand-tag { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+.crumb { color: var(--muted); font-size: 13px; }
+.crumb b { color: var(--ink); font-weight: 500; }
+.split { flex: 1; }
+.kbd { padding: 1px 5px; border: 1px solid var(--border-strong); border-radius: 3px; font-size: 10px; background: var(--panel-2); color: var(--muted); font-family: 'JetBrains Mono'; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--ink-2); }
+.btn-primary { background: var(--accent); color: #062a36; border-color: var(--accent); font-weight: 600; }
+
+.layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 56px); }
+.sidebar { background: var(--panel); border-right: 1px solid var(--border); padding: 16px 12px; }
+.sb-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--subtle); padding: 0 10px 5px; font-weight: 600; }
+.sb-section { margin-bottom: 18px; }
+.sb-item { display: flex; align-items: center; gap: 9px; padding: 5px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.sb-item:hover { background: var(--panel-2); }
+.sb-item.active { background: rgba(34,211,238,0.12); color: var(--accent); }
+.sb-item svg { width: 14px; height: 14px; opacity: 0.85; }
+.sb-item.muted { color: var(--muted); }
+
+.main { padding: 22px 28px; }
+.head-row { display:flex; align-items:center; gap:16px; margin-bottom: 16px; flex-wrap: wrap; }
+.title { font-size: 22px; font-weight: 600; letter-spacing: -0.018em; }
+.subtitle { color: var(--muted); font-size: 13px; }
+
+/* Summary tiles */
+.summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+.s-tile { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.s-tile.crit { border-color: rgba(251,113,133,0.4); background: linear-gradient(180deg, rgba(251,113,133,0.06), transparent), var(--panel); }
+.s-tile.warn { border-color: rgba(251,191,36,0.4); background: linear-gradient(180deg, rgba(251,191,36,0.06), transparent), var(--panel); }
+.s-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+.s-value { font-size: 26px; font-weight: 600; font-family: 'JetBrains Mono'; }
+.s-value.crit { color: var(--rose); }
+.s-value.warn { color: var(--amber); }
+.s-value.ok { color: var(--emerald); }
+.s-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono'; }
+
+/* Filters */
+.filter-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.filter-chip { padding: 4px 10px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); font-size: 12px; color: var(--ink-2); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+.filter-chip.active { background: rgba(34,211,238,0.12); border-color: var(--accent); color: var(--accent); }
+.filter-chip .ct { background: var(--panel-2); padding: 0 5px; border-radius: 999px; font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono'; }
+.search-bar { flex: 1; max-width: 320px; display: flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 6px; background: var(--panel); border: 1px solid var(--border); font-size: 12.5px; color: var(--muted); }
+
+/* Incident list */
+.incidents { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.inc { display: grid; grid-template-columns: 12px 1fr 220px 130px 90px 80px 24px; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; }
+.inc:last-child { border-bottom: none; }
+.inc:hover { background: var(--panel-2); }
+.inc.firing { background: rgba(251,113,133,0.04); }
+.inc.firing:hover { background: rgba(251,113,133,0.08); }
+.sev-bar { width: 3px; height: 28px; border-radius: 2px; }
+.sev-bar.crit { background: var(--rose); }
+.sev-bar.high { background: var(--amber); }
+.sev-bar.warn { background: var(--indigo); }
+.sev-bar.info { background: var(--accent); }
+.inc-name { font-weight: 500; color: var(--ink); }
+.inc-rule { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.inc-routes { font-family: 'JetBrains Mono'; font-size: 11.5px; color: var(--ink-2); }
+.inc-since { color: var(--muted); font-family: 'JetBrains Mono'; font-size: 12px; }
+.inc-fired { color: var(--ink-2); font-family: 'JetBrains Mono'; font-size: 12px; }
+.inc-state { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600; font-family:'JetBrains Mono'; }
+.is-fire { background: rgba(251,113,133,0.12); color: var(--rose); }
+.is-warn { background: rgba(251,191,36,0.12); color: var(--amber); }
+.is-info { background: rgba(34,211,238,0.12); color: var(--accent); }
+.is-res  { background: rgba(52,211,153,0.12); color: var(--emerald); }
+.inc-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--rose); margin-right: 4px; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity: 0.4 } }
+
+.spark-mini { height: 28px; width: 110px; }
+
+/* Detail rail */
+.detail { background: var(--panel); border-left: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 5 H13 V8 H3 Z M3 9 H13 V12 H3 Z M8 13 V15 M6 14 H10"/></svg></div>
+    <div><div class="brand-name">Bastion</div><div class="brand-tag">LLM GATEWAY · prod-us-east-1</div></div>
+  </div>
+  <div class="crumb">Observability · <b>Alerts</b></div>
+  <div class="split"></div>
+  <span class="kbd">⌘K</span>
+  <button class="btn">Acknowledge all</button>
+  <button class="btn btn-primary">+ New rule</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-section">
+      <div class="sb-label">Routes</div>
+      <div class="sb-item">Production gateway</div>
+      <div class="sb-item muted">Staging</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Observability</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12 L6 7 L9 10 L14 4"/></svg>Metrics</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4 H13 M3 8 H13 M3 12 H8"/></svg>Logs</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><path d="M8 3 V8 L11 11"/></svg>Traces</div>
+      <div class="sb-item active"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5 V9 M8 11 V11.1"/></svg>Alerts <span style="margin-left:auto; padding: 0 5px; background: rgba(251,113,133,0.15); color: var(--rose); border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono';">3</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Governance</div>
+      <div class="sb-item muted">Policies</div>
+      <div class="sb-item muted">Quotas</div>
+      <div class="sb-item muted">Audit log</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">On-call</div>
+      <div class="sb-item" style="font-size:12.5px; color: var(--ink-2);">
+        <span style="width:18px; height:18px; border-radius:50%; background: linear-gradient(135deg,#f472b6,#fbbf24); display:inline-flex; align-items:center; justify-content:center; font-size:9px; font-weight:600;">JR</span>
+        Jordan · primary
+      </div>
+      <div class="sb-item" style="font-size:12.5px; color: var(--muted);">
+        <span style="width:18px; height:18px; border-radius:50%; background: linear-gradient(135deg,#818cf8,#22d3ee); display:inline-flex; align-items:center; justify-content:center; font-size:9px; font-weight:600;">AS</span>
+        Alex · secondary
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="head-row">
+      <div>
+        <div class="title">Alerts</div>
+        <div class="subtitle">3 firing · 5 acknowledged · 12 resolved in the last 24 hours</div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="s-tile crit">
+        <div class="s-label">Firing</div>
+        <div class="s-value crit tab">3</div>
+        <div class="s-meta">2 critical · 1 high</div>
+      </div>
+      <div class="s-tile warn">
+        <div class="s-label">Acknowledged</div>
+        <div class="s-value warn tab">5</div>
+        <div class="s-meta">avg time-to-ack 4m 12s</div>
+      </div>
+      <div class="s-tile">
+        <div class="s-label">Auto-resolved (24h)</div>
+        <div class="s-value ok tab">12</div>
+        <div class="s-meta">↘ −8% wow</div>
+      </div>
+      <div class="s-tile">
+        <div class="s-label">Silenced</div>
+        <div class="s-value tab" style="color:var(--ink-2)">2</div>
+        <div class="s-meta">2 expiring within 1h</div>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <span class="filter-chip active">All <span class="ct">20</span></span>
+      <span class="filter-chip">Firing <span class="ct">3</span></span>
+      <span class="filter-chip">Acknowledged <span class="ct">5</span></span>
+      <span class="filter-chip">Critical <span class="ct">2</span></span>
+      <span class="filter-chip">High <span class="ct">3</span></span>
+      <div class="split" style="flex:1"></div>
+      <div class="search-bar">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11 L14 14"/></svg>
+        <span style="flex:1">Search rule, route, tag…</span>
+      </div>
+    </div>
+
+    <div class="incidents">
+      <div class="inc firing">
+        <div class="sev-bar crit"></div>
+        <div>
+          <div class="inc-name">p95 latency exceeds SLO · /v1/messages</div>
+          <div class="inc-rule">rule: histogram_quantile(0.95, ...) &gt; 1400ms for 5m</div>
+        </div>
+        <div class="inc-routes">prod-us-east-1<br/><span class="inc-since">tenant: globex-research</span></div>
+        <svg class="spark-mini" viewBox="0 0 110 28" preserveAspectRatio="none">
+          <polyline points="0,22 10,20 20,18 30,15 40,17 50,12 60,10 70,8 80,6 90,4 100,3 110,2" fill="none" stroke="#fb7185" stroke-width="1.5"/>
+          <line x1="0" y1="9" x2="110" y2="9" stroke="#fb7185" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.5"/>
+        </svg>
+        <div class="inc-since">14m 38s ago</div>
+        <div><span class="inc-state is-fire"><span class="inc-pulse"></span>FIRING</span></div>
+        <div style="color:var(--subtle)">›</div>
+      </div>
+      <div class="inc firing">
+        <div class="sev-bar crit"></div>
+        <div>
+          <div class="inc-name">Upstream 5xx rate &gt; 1% · openai/messages</div>
+          <div class="inc-rule">rule: sum(rate(upstream_5xx[3m])) / sum(rate(upstream_total[3m])) &gt; 0.01</div>
+        </div>
+        <div class="inc-routes">openai · gpt-4o<br/><span class="inc-since">all tenants</span></div>
+        <svg class="spark-mini" viewBox="0 0 110 28" preserveAspectRatio="none">
+          <polyline points="0,26 10,25 20,23 30,20 40,18 50,15 60,12 70,9 80,7 90,5 100,4 110,3" fill="none" stroke="#fb7185" stroke-width="1.5"/>
+        </svg>
+        <div class="inc-since">6m 12s ago</div>
+        <div><span class="inc-state is-fire"><span class="inc-pulse"></span>FIRING</span></div>
+        <div style="color:var(--subtle)">›</div>
+      </div>
+      <div class="inc firing">
+        <div class="sev-bar high"></div>
+        <div>
+          <div class="inc-name">Tenant quota approaching limit · orbital-agents</div>
+          <div class="inc-rule">rule: tenant_token_used / tenant_token_quota &gt; 0.9 for 10m</div>
+        </div>
+        <div class="inc-routes">tenant: orbital-agents<br/><span class="inc-since">tier: free · 92% used</span></div>
+        <svg class="spark-mini" viewBox="0 0 110 28" preserveAspectRatio="none">
+          <polyline points="0,24 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,5 100,4 110,3" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
+        </svg>
+        <div class="inc-since">22m 47s ago</div>
+        <div><span class="inc-state is-fire"><span class="inc-pulse" style="background:var(--amber)"></span>FIRING</span></div>
+        <div style="color:var(--subtle)">›</div>
+      </div>
+      <div class="inc">
+        <div class="sev-bar high"></div>
+        <div>
+          <div class="inc-name">Cache miss rate elevated · embeddings</div>
+          <div class="inc-rule">rule: 1 - rate(cache_hits[5m]) / rate(cache_total[5m]) &gt; 0.5</div>
+        </div>
+        <div class="inc-routes">/v1/embeddings</div>
+        <svg class="spark-mini" viewBox="0 0 110 28" preserveAspectRatio="none">
+          <polyline points="0,18 10,16 20,17 30,15 40,14 50,13 60,11 70,12 80,10 90,9 100,11 110,10" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
+        </svg>
+        <div class="inc-since">1h 4m ago</div>
+        <div><span class="inc-state is-warn">ACK · Jordan</span></div>
+        <div style="color:var(--subtle)">›</div>
+      </div>
+      <div class="inc">
+        <div class="sev-bar warn"></div>
+        <div>
+          <div class="inc-name">Anomalous spend per tenant · acme-prod</div>
+          <div class="inc-rule">rule: |spend_z_score| &gt; 2.5 over 1h trailing</div>
+        </div>
+        <div class="inc-routes">tenant: acme-prod<br/><span class="inc-since">+4.2σ vs baseline</span></div>
+        <svg class="spark-mini" viewBox="0 0 110 28" preserveAspectRatio="none">
+          <polyline points="0,20 10,18 20,17 30,15 40,12 50,10 60,8 70,6 80,4 90,3 100,4 110,5" fill="none" stroke="#818cf8" stroke-width="1.5"/>
+        </svg>
+        <div class="inc-since">2h 11m ago</div>
+        <div><span class="inc-state is-warn">ACK · Alex</span></div>
+        <div style="color:var(--subtle)">›</div>
+      </div>
+      <div class="inc">
+        <div class="sev-bar info"></div>
+        <div>
+          <div class="inc-name">Failover succeeded · anthropic → bedrock</div>
+          <div class="inc-rule">rule: failover_count[1m] &gt; 0</div>
+        </div>
+        <div class="inc-routes">anthropic → bedrock<br/><span class="inc-since">in 230ms</span></div>
+        <svg class="spark-mini" viewBox="0 0 110 28" preserveAspectRatio="none">
+          <polyline points="0,14 10,14 20,14 30,14 40,2 50,14 60,14 70,14 80,14 90,14 100,14 110,14" fill="none" stroke="#22d3ee" stroke-width="1.5"/>
+        </svg>
+        <div class="inc-since">3h 22m ago</div>
+        <div><span class="inc-state is-info">INFO</span></div>
+        <div style="color:var(--subtle)">›</div>
+      </div>
+      <div class="inc">
+        <div class="sev-bar info"></div>
+        <div>
+          <div class="inc-name">Resolved · circuit breaker recovered</div>
+          <div class="inc-rule">rule: cb_state{breaker="bedrock-haiku"} == closed</div>
+        </div>
+        <div class="inc-routes">bedrock-haiku-v3</div>
+        <svg class="spark-mini" viewBox="0 0 110 28" preserveAspectRatio="none">
+          <polyline points="0,4 10,5 20,4 30,3 40,5 50,4 60,4 70,4 80,4 90,4 100,4 110,4" fill="none" stroke="#34d399" stroke-width="1.5"/>
+        </svg>
+        <div class="inc-since">5h 8m ago</div>
+        <div><span class="inc-state is-res">RESOLVED</span></div>
+        <div style="color:var(--subtle)">›</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

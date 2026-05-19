@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Providers · Bastion Gateway</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2306b6d4'/><stop offset='1' stop-color='%230ea5e9'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='%230f172a'/><path d='M8 10 H24 V14 H8 Z M8 16 H24 V20 H8 Z M16 22 V26 M12 24 H20' stroke='url(%23g)' fill='none' stroke-width='1.5' stroke-linecap='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1018;
+  --panel: #111824;
+  --panel-2: #161e2c;
+  --panel-3: #1a2336;
+  --ink: #e6edf7;
+  --ink-2: #c1cbdb;
+  --muted: #7d8aa1;
+  --subtle: #525d75;
+  --border: #1d2738;
+  --border-strong: #2a3548;
+  --accent: #22d3ee;
+  --accent-soft: rgba(34,211,238,0.12);
+  --emerald: #34d399;
+  --amber: #fbbf24;
+  --rose: #fb7185;
+  --indigo: #818cf8;
+  --pink: #f472b6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.011em; line-height: 1.5; }
+.mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+.tab { font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-decoration: none; }
+
+/* Top nav — different from index's sidebar layout */
+.shell { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 9px 22px; display: flex; align-items: center; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 0 12px rgba(99,102,241,0.4); }
+.brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+.brand-tag { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+.subnav { background: var(--panel); border-bottom: 1px solid var(--border); padding: 0 22px; display: flex; gap: 22px; }
+.subnav a { padding: 9px 0; font-size: 13px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 7px; }
+.subnav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+.subnav a svg { width: 13px; height: 13px; }
+.subnav .right { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 11.5px; color: var(--muted); }
+.live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; background: rgba(52,211,153,0.1); color: var(--emerald); font-size: 11px; }
+.live-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.4; } }
+.kbd { padding: 1px 5px; border: 1px solid var(--border-strong); border-radius: 3px; font-size: 10px; background: var(--panel-2); color: var(--muted); font-family: 'JetBrains Mono'; }
+
+.main { padding: 22px 28px; max-width: 1640px; width: 100%; margin: 0 auto; }
+.head { display: flex; align-items: end; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+.title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+.subtitle { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--ink-2); }
+
+/* Provider cards — 3-column grid */
+.providers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.pcard { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; position: relative; overflow: hidden; }
+.pcard::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.06; }
+.pcard.anthropic::before { background: linear-gradient(135deg, #d97706 0%, transparent 50%); }
+.pcard.openai::before    { background: linear-gradient(135deg, #34d399 0%, transparent 50%); }
+.pcard.gemini::before    { background: linear-gradient(135deg, #818cf8 0%, transparent 50%); }
+.pcard.bedrock::before   { background: linear-gradient(135deg, #fbbf24 0%, transparent 50%); }
+.pcard.cohere::before    { background: linear-gradient(135deg, #f472b6 0%, transparent 50%); }
+.pcard.mistral::before   { background: linear-gradient(135deg, #fb7185 0%, transparent 50%); }
+.pcard-h { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; position: relative; }
+.pcard-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 14px; }
+.pcard.anthropic .pcard-icon { background: rgba(217,119,6,0.18); color: #fbbf24; }
+.pcard.openai    .pcard-icon { background: rgba(52,211,153,0.18); color: #34d399; }
+.pcard.gemini    .pcard-icon { background: rgba(129,140,248,0.18); color: #a5b4fc; }
+.pcard.bedrock   .pcard-icon { background: rgba(251,191,36,0.18); color: #fcd34d; }
+.pcard.cohere    .pcard-icon { background: rgba(244,114,182,0.18); color: #f9a8d4; }
+.pcard.mistral   .pcard-icon { background: rgba(251,113,133,0.18); color: #fda4af; }
+.pcard-title { font-size: 14px; font-weight: 600; line-height: 1.2; }
+.pcard-sub { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono'; }
+.pcard-status { margin-left: auto; padding: 2px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 600; }
+.pcard-status.ok { background: rgba(52,211,153,0.15); color: var(--emerald); }
+.pcard-status.deg { background: rgba(251,191,36,0.15); color: #fcd34d; }
+.pcard-status.fail { background: rgba(251,113,133,0.15); color: var(--rose); }
+.pcard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.pcell-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.pcell-value { font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 600; margin-top: 2px; color: var(--ink); }
+.pcell-value.ok { color: var(--emerald); }
+.pcell-value.warn { color: var(--amber); }
+.pcell-value.err { color: var(--rose); }
+.pcard-spark { height: 36px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.pcard-models { padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--border); }
+.pcard-model { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; font-size: 12px; }
+.pcard-model .m-name { font-family: 'JetBrains Mono'; color: var(--ink-2); }
+.pcard-model .m-bar  { width: 56px; height: 4px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.pcard-model .m-fill { height: 100%; }
+.pcard-model .m-pct  { font-family: 'JetBrains Mono'; color: var(--muted); font-size: 10.5px; min-width: 38px; text-align: right; }
+
+/* Routing table */
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+.panel-title { font-size: 13px; font-weight: 600; }
+.panel-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.t-table { width: 100%; font-size: 12.5px; }
+.t-table th { text-align: left; padding: 7px 14px; color: var(--muted); font-weight: 500; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+.t-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--ink-2); font-size: 12.5px; }
+.t-table .tab { font-family: 'JetBrains Mono'; }
+.t-table tr:last-child td { border-bottom: 0; }
+.t-table tr:hover td { background: var(--panel-2); }
+.chip { display: inline-flex; align-items: center; padding: 1px 7px; font-size: 10.5px; border-radius: 4px; font-family: 'JetBrains Mono'; }
+.chip.acc { background: rgba(34,211,238,0.12); color: var(--accent); }
+.chip.cool { background: rgba(129,140,248,0.12); color: #a5b4fc; }
+.chip.amber { background: rgba(251,191,36,0.12); color: #fcd34d; }
+.chip.emerald { background: rgba(52,211,153,0.12); color: var(--emerald); }
+.chip.pink { background: rgba(244,114,182,0.12); color: #f9a8d4; }
+.chip.rose { background: rgba(251,113,133,0.12); color: var(--rose); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 5 H13 V8 H3 Z M3 9 H13 V12 H3 Z M8 13 V15 M6 14 H10"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Bastion</div>
+      <div class="brand-tag">LLM GATEWAY · prod-us-east-1</div>
+    </div>
+  </div>
+  <div style="flex:1"></div>
+  <span class="live-pill"><span class="dot"></span>live · 5s</span>
+  <button class="btn">Export</button>
+</div>
+
+<nav class="subnav">
+  <a href="index.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12 L6 7 L9 10 L14 4"/></svg>Overview</a>
+  <a class="active" href="providers.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="8" r="2.5"/><circle cx="11" cy="8" r="2.5"/><path d="M7.5 8 H8.5"/></svg>Providers</a>
+  <a href="traces.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4 H6 V14 H2 Z M7 7 H11 V14 H7 Z M12 5 H14 V14 H12 Z"/></svg>Traces</a>
+  <a href="spend.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2 V14 M5 5 H11 M5 11 H11"/></svg>Spend</a>
+  <a href="alerts.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5 V9 M8 11 V11.1"/></svg>Alerts <span class="chip rose" style="margin-left:5px">3</span></a>
+  <div class="right">
+    <span>prod-us-east-1 ↘ <span class="mono" style="color:var(--ink-2)">f4a91c</span></span>
+    <span class="kbd">⌘K</span>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="head">
+    <div>
+      <div class="title">Providers</div>
+      <div class="subtitle">6 upstreams · weighted routing · 218 active tenants · <span class="mono">last health-check 2s ago</span></div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn">Filter</button>
+      <button class="btn">Group: <b style="color:var(--ink)">provider</b></button>
+    </div>
+  </div>
+
+  <div class="providers">
+
+    <div class="pcard anthropic">
+      <div class="pcard-h">
+        <div class="pcard-icon">A</div>
+        <div>
+          <div class="pcard-title">Anthropic</div>
+          <div class="pcard-sub">api.anthropic.com · primary</div>
+        </div>
+        <span class="pcard-status ok">healthy</span>
+      </div>
+      <div class="pcard-grid">
+        <div><div class="pcell-label">RPS</div><div class="pcell-value tab">412</div></div>
+        <div><div class="pcell-label">p95 latency</div><div class="pcell-value tab">1.18<span style="font-size:11px; color:var(--muted)">s</span></div></div>
+        <div><div class="pcell-label">Error rate</div><div class="pcell-value tab ok">0.04%</div></div>
+      </div>
+      <svg class="pcard-spark" viewBox="0 0 200 36" preserveAspectRatio="none"><polyline fill="none" stroke="#fbbf24" stroke-width="1.4" points="0,22 14,20 28,21 42,18 56,16 70,18 84,15 98,14 112,16 126,12 140,11 154,9 168,8 182,10 200,7"/><polygon fill="#fbbf24" opacity="0.15" points="0,22 14,20 28,21 42,18 56,16 70,18 84,15 98,14 112,16 126,12 140,11 154,9 168,8 182,10 200,7 200,36 0,36"/></svg>
+      <div class="pcard-models">
+        <div class="pcard-model"><span class="m-name">claude-opus-4-7</span><span class="m-bar"><span class="m-fill" style="width:62%; background:#fbbf24"></span></span><span class="m-pct">62%</span></div>
+        <div class="pcard-model"><span class="m-name">claude-sonnet-4-6</span><span class="m-bar"><span class="m-fill" style="width:31%; background:#fbbf24"></span></span><span class="m-pct">31%</span></div>
+        <div class="pcard-model"><span class="m-name">claude-haiku-4-5</span><span class="m-bar"><span class="m-fill" style="width:7%; background:#fbbf24"></span></span><span class="m-pct">7%</span></div>
+      </div>
+    </div>
+
+    <div class="pcard openai">
+      <div class="pcard-h">
+        <div class="pcard-icon">O</div>
+        <div>
+          <div class="pcard-title">OpenAI</div>
+          <div class="pcard-sub">api.openai.com · fallback</div>
+        </div>
+        <span class="pcard-status ok">healthy</span>
+      </div>
+      <div class="pcard-grid">
+        <div><div class="pcell-label">RPS</div><div class="pcell-value tab">198</div></div>
+        <div><div class="pcell-label">p95 latency</div><div class="pcell-value tab">1.42<span style="font-size:11px; color:var(--muted)">s</span></div></div>
+        <div><div class="pcell-label">Error rate</div><div class="pcell-value tab ok">0.11%</div></div>
+      </div>
+      <svg class="pcard-spark" viewBox="0 0 200 36" preserveAspectRatio="none"><polyline fill="none" stroke="#34d399" stroke-width="1.4" points="0,16 14,18 28,14 42,16 56,12 70,15 84,17 98,13 112,16 126,18 140,14 154,11 168,13 182,9 200,12"/><polygon fill="#34d399" opacity="0.15" points="0,16 14,18 28,14 42,16 56,12 70,15 84,17 98,13 112,16 126,18 140,14 154,11 168,13 182,9 200,12 200,36 0,36"/></svg>
+      <div class="pcard-models">
+        <div class="pcard-model"><span class="m-name">gpt-5</span><span class="m-bar"><span class="m-fill" style="width:48%; background:#34d399"></span></span><span class="m-pct">48%</span></div>
+        <div class="pcard-model"><span class="m-name">gpt-4o</span><span class="m-bar"><span class="m-fill" style="width:38%; background:#34d399"></span></span><span class="m-pct">38%</span></div>
+        <div class="pcard-model"><span class="m-name">o3-mini</span><span class="m-bar"><span class="m-fill" style="width:14%; background:#34d399"></span></span><span class="m-pct">14%</span></div>
+      </div>
+    </div>
+
+    <div class="pcard gemini">
+      <div class="pcard-h">
+        <div class="pcard-icon">G</div>
+        <div>
+          <div class="pcard-title">Google · Gemini</div>
+          <div class="pcard-sub">generativelanguage.googleapis.com</div>
+        </div>
+        <span class="pcard-status deg">degraded</span>
+      </div>
+      <div class="pcard-grid">
+        <div><div class="pcell-label">RPS</div><div class="pcell-value tab">128</div></div>
+        <div><div class="pcell-label">p95 latency</div><div class="pcell-value tab warn">2.84<span style="font-size:11px; color:var(--muted)">s</span></div></div>
+        <div><div class="pcell-label">Error rate</div><div class="pcell-value tab warn">2.3%</div></div>
+      </div>
+      <svg class="pcard-spark" viewBox="0 0 200 36" preserveAspectRatio="none"><polyline fill="none" stroke="#818cf8" stroke-width="1.4" points="0,12 14,14 28,11 42,15 56,18 70,22 84,19 98,24 112,21 126,18 140,16 154,20 168,17 182,22 200,18"/><polygon fill="#818cf8" opacity="0.15" points="0,12 14,14 28,11 42,15 56,18 70,22 84,19 98,24 112,21 126,18 140,16 154,20 168,17 182,22 200,18 200,36 0,36"/></svg>
+      <div class="pcard-models">
+        <div class="pcard-model"><span class="m-name">gemini-2.5-pro</span><span class="m-bar"><span class="m-fill" style="width:58%; background:#818cf8"></span></span><span class="m-pct">58%</span></div>
+        <div class="pcard-model"><span class="m-name">gemini-2.5-flash</span><span class="m-bar"><span class="m-fill" style="width:42%; background:#818cf8"></span></span><span class="m-pct">42%</span></div>
+      </div>
+    </div>
+
+    <div class="pcard bedrock">
+      <div class="pcard-h">
+        <div class="pcard-icon">B</div>
+        <div>
+          <div class="pcard-title">AWS Bedrock</div>
+          <div class="pcard-sub">bedrock.us-east-1.amazonaws.com</div>
+        </div>
+        <span class="pcard-status ok">healthy</span>
+      </div>
+      <div class="pcard-grid">
+        <div><div class="pcell-label">RPS</div><div class="pcell-value tab">68</div></div>
+        <div><div class="pcell-label">p95 latency</div><div class="pcell-value tab">1.91<span style="font-size:11px; color:var(--muted)">s</span></div></div>
+        <div><div class="pcell-label">Error rate</div><div class="pcell-value tab ok">0.18%</div></div>
+      </div>
+      <svg class="pcard-spark" viewBox="0 0 200 36" preserveAspectRatio="none"><polyline fill="none" stroke="#fcd34d" stroke-width="1.4" points="0,20 14,18 28,22 42,19 56,21 70,16 84,18 98,14 112,17 126,11 140,15 154,12 168,9 182,11 200,8"/><polygon fill="#fcd34d" opacity="0.15" points="0,20 14,18 28,22 42,19 56,21 70,16 84,18 98,14 112,17 126,11 140,15 154,12 168,9 182,11 200,8 200,36 0,36"/></svg>
+      <div class="pcard-models">
+        <div class="pcard-model"><span class="m-name">claude-3-7-sonnet@bedrock</span><span class="m-bar"><span class="m-fill" style="width:71%; background:#fcd34d"></span></span><span class="m-pct">71%</span></div>
+        <div class="pcard-model"><span class="m-name">llama-3.3-70b@bedrock</span><span class="m-bar"><span class="m-fill" style="width:29%; background:#fcd34d"></span></span><span class="m-pct">29%</span></div>
+      </div>
+    </div>
+
+    <div class="pcard cohere">
+      <div class="pcard-h">
+        <div class="pcard-icon">C</div>
+        <div>
+          <div class="pcard-title">Cohere</div>
+          <div class="pcard-sub">api.cohere.ai · rerank-only</div>
+        </div>
+        <span class="pcard-status ok">healthy</span>
+      </div>
+      <div class="pcard-grid">
+        <div><div class="pcell-label">RPS</div><div class="pcell-value tab">29</div></div>
+        <div><div class="pcell-label">p95 latency</div><div class="pcell-value tab">0.41<span style="font-size:11px; color:var(--muted)">s</span></div></div>
+        <div><div class="pcell-label">Error rate</div><div class="pcell-value tab ok">0.02%</div></div>
+      </div>
+      <svg class="pcard-spark" viewBox="0 0 200 36" preserveAspectRatio="none"><polyline fill="none" stroke="#f9a8d4" stroke-width="1.4" points="0,22 14,24 28,23 42,25 56,24 70,23 84,22 98,21 112,23 126,24 140,22 154,20 168,18 182,20 200,17"/><polygon fill="#f9a8d4" opacity="0.15" points="0,22 14,24 28,23 42,25 56,24 70,23 84,22 98,21 112,23 126,24 140,22 154,20 168,18 182,20 200,17 200,36 0,36"/></svg>
+      <div class="pcard-models">
+        <div class="pcard-model"><span class="m-name">rerank-v3</span><span class="m-bar"><span class="m-fill" style="width:100%; background:#f9a8d4"></span></span><span class="m-pct">100%</span></div>
+      </div>
+    </div>
+
+    <div class="pcard mistral">
+      <div class="pcard-h">
+        <div class="pcard-icon">M</div>
+        <div>
+          <div class="pcard-title">Mistral · LeChat</div>
+          <div class="pcard-sub">api.mistral.ai · eu-route</div>
+        </div>
+        <span class="pcard-status fail">circuit open</span>
+      </div>
+      <div class="pcard-grid">
+        <div><div class="pcell-label">RPS</div><div class="pcell-value tab err">0</div></div>
+        <div><div class="pcell-label">p95 latency</div><div class="pcell-value tab err">—</div></div>
+        <div><div class="pcell-label">Error rate</div><div class="pcell-value tab err">100%</div></div>
+      </div>
+      <svg class="pcard-spark" viewBox="0 0 200 36" preserveAspectRatio="none"><polyline fill="none" stroke="#fb7185" stroke-width="1.4" points="0,18 14,15 28,17 42,19 56,16 70,14 84,18 98,21 112,24 126,28 140,32 154,33 168,33 182,33 200,33"/><polygon fill="#fb7185" opacity="0.15" points="0,18 14,15 28,17 42,19 56,16 70,14 84,18 98,21 112,24 126,28 140,32 154,33 168,33 182,33 200,33 200,36 0,36"/></svg>
+      <div class="pcard-models">
+        <div class="pcard-model"><span class="m-name">mistral-large-2</span><span class="m-bar"><span class="m-fill" style="width:0%; background:#fb7185"></span></span><span class="m-pct">0%</span></div>
+        <div class="pcard-model" style="color:var(--muted); font-size:11px"><span>↳ open since <span class="mono">14:22 UTC</span> · auto-retry in <span class="mono">88s</span></span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">Routing rules</div>
+        <div class="panel-sub">Evaluated in order. First match wins · 8 active · 2 staged</div>
+      </div>
+      <button class="btn">+ New rule</button>
+    </div>
+    <table class="t-table">
+      <thead><tr><th>Priority</th><th>Match</th><th>Strategy</th><th>Targets</th><th>Sticky</th><th>Hits (1h)</th><th>Edited</th></tr></thead>
+      <tbody>
+        <tr><td class="tab">10</td><td><span class="chip cool">tenant=acme-prod</span> <span class="chip acc">model:opus*</span></td><td>weighted</td><td><span class="chip amber">anthropic 70%</span> <span class="chip amber">bedrock 30%</span></td><td><span class="chip emerald">session</span></td><td class="tab">82,114</td><td class="mono" style="color:var(--muted)">3h ago</td></tr>
+        <tr><td class="tab">20</td><td><span class="chip acc">model:sonnet*</span></td><td>round-robin</td><td><span class="chip amber">anthropic</span> <span class="chip amber">bedrock</span></td><td>—</td><td class="tab">156,802</td><td class="mono" style="color:var(--muted)">1d ago</td></tr>
+        <tr><td class="tab">30</td><td><span class="chip emerald">model:gpt-5*</span></td><td>least-loaded</td><td><span class="chip emerald">openai</span></td><td><span class="chip emerald">session</span></td><td class="tab">38,449</td><td class="mono" style="color:var(--muted)">2d ago</td></tr>
+        <tr><td class="tab">40</td><td><span class="chip cool">tenant.tier=enterprise</span></td><td>fallback chain</td><td><span class="chip amber">anthropic</span> → <span class="chip emerald">openai</span> → <span class="chip cool">gemini</span></td><td>—</td><td class="tab">21,209</td><td class="mono" style="color:var(--muted)">2d ago</td></tr>
+        <tr><td class="tab">50</td><td><span class="chip pink">tool=rerank</span></td><td>direct</td><td><span class="chip pink">cohere</span></td><td>—</td><td class="tab">11,508</td><td class="mono" style="color:var(--muted)">5d ago</td></tr>
+        <tr><td class="tab">60</td><td><span class="chip cool">region=eu-*</span></td><td>weighted</td><td><span class="chip rose">mistral 60%</span> <span class="chip amber">anthropic 40%</span></td><td>—</td><td class="tab">5,891</td><td class="mono" style="color:var(--muted)">3w ago</td></tr>
+        <tr><td class="tab">∞</td><td>default</td><td>round-robin</td><td><span class="chip amber">anthropic</span> <span class="chip emerald">openai</span></td><td>—</td><td class="tab">2,841</td><td class="mono" style="color:var(--muted)">3w ago</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spend · Bastion Gateway</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2306b6d4'/><stop offset='1' stop-color='%230ea5e9'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='%230f172a'/><path d='M8 10 H24 V14 H8 Z M8 16 H24 V20 H8 Z M16 22 V26 M12 24 H20' stroke='url(%23g)' fill='none' stroke-width='1.5' stroke-linecap='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1018; --panel: #111824; --panel-2: #161e2c; --panel-3: #1a2336;
+  --ink: #e6edf7; --ink-2: #c1cbdb; --muted: #7d8aa1; --subtle: #525d75;
+  --border: #1d2738; --border-strong: #2a3548;
+  --accent: #22d3ee; --emerald: #34d399; --amber: #fbbf24; --rose: #fb7185;
+  --indigo: #818cf8; --pink: #f472b6; --orange: #fb923c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.011em; line-height: 1.5; }
+.mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+.tab { font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-decoration: none; }
+
+.topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 9px 22px; display: flex; align-items: center; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 0 12px rgba(99,102,241,0.4); }
+.brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+.brand-tag { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+.subnav { background: var(--panel); border-bottom: 1px solid var(--border); padding: 0 22px; display: flex; gap: 22px; }
+.subnav a { padding: 9px 0; font-size: 13px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 7px; }
+.subnav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+.subnav a svg { width: 13px; height: 13px; }
+.subnav .right { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 11.5px; color: var(--muted); }
+.kbd { padding: 1px 5px; border: 1px solid var(--border-strong); border-radius: 3px; font-size: 10px; background: var(--panel-2); color: var(--muted); font-family: 'JetBrains Mono'; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--ink-2); }
+.live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; background: rgba(52,211,153,0.1); color: var(--emerald); font-size: 11px; }
+.live-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); }
+.chip { display: inline-flex; align-items: center; padding: 1px 7px; font-size: 10.5px; border-radius: 4px; font-family: 'JetBrains Mono'; }
+.chip.acc { background: rgba(34,211,238,0.12); color: var(--accent); }
+.chip.cool { background: rgba(129,140,248,0.12); color: #a5b4fc; }
+.chip.amber { background: rgba(251,191,36,0.12); color: #fcd34d; }
+.chip.emerald { background: rgba(52,211,153,0.12); color: var(--emerald); }
+.chip.rose { background: rgba(251,113,133,0.12); color: var(--rose); }
+.chip.pink { background: rgba(244,114,182,0.12); color: #f9a8d4; }
+
+.main { padding: 22px 28px; max-width: 1640px; width: 100%; margin: 0 auto; }
+.head { display: flex; align-items: end; justify-content: space-between; margin-bottom: 18px; }
+.title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+.subtitle { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+.timerange { display: inline-flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
+.tr-opt { padding: 3px 9px; font-size: 12px; color: var(--muted); border-radius: 4px; cursor: pointer; }
+.tr-opt.active { background: var(--panel-2); color: var(--ink); }
+
+/* Big headline tile + small KPIs */
+.spend-hero { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.hero-tile { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; position: relative; overflow: hidden; }
+.hero-tile.big { background: linear-gradient(135deg, var(--panel) 0%, var(--panel-3) 100%); border-color: var(--border-strong); }
+.hero-tile.big::after { content: ''; position: absolute; right: -40px; top: -40px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(34,211,238,0.15) 0%, transparent 70%); }
+.hero-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); font-weight: 500; }
+.hero-v { font-family: 'JetBrains Mono'; font-size: 26px; font-weight: 700; margin-top: 5px; }
+.hero-v.big { font-size: 38px; }
+.hero-sub { color: var(--muted); font-size: 11.5px; margin-top: 4px; font-family: 'JetBrains Mono'; }
+.hero-delta { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 8px; font-family: 'JetBrains Mono'; }
+.hero-delta.up { background: rgba(251,113,133,0.12); color: var(--rose); }
+.hero-delta.down { background: rgba(52,211,153,0.12); color: var(--emerald); }
+
+/* Stacked bar — daily spend */
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+.panel-title { font-size: 13px; font-weight: 600; }
+.panel-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--muted); }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-item .sw { width: 8px; height: 8px; border-radius: 2px; }
+
+.daily-bars { padding: 18px 22px; }
+.bar-row { display: grid; grid-template-columns: 60px 1fr 70px; gap: 12px; align-items: center; padding: 5px 0; font-size: 11.5px; }
+.bar-row .day { color: var(--muted); font-family: 'JetBrains Mono'; }
+.bar-row .total { color: var(--ink-2); font-family: 'JetBrains Mono'; text-align: right; font-weight: 500; }
+.bar-stack { display: flex; height: 18px; border-radius: 3px; overflow: hidden; gap: 1px; background: var(--panel-2); }
+.bar-seg { height: 100%; min-width: 1px; }
+.bar-seg.anthropic { background: var(--amber); }
+.bar-seg.openai    { background: var(--emerald); }
+.bar-seg.gemini    { background: var(--indigo); }
+.bar-seg.bedrock   { background: #fcd34d; }
+.bar-seg.cohere    { background: var(--pink); }
+.bar-seg.mistral   { background: var(--rose); }
+
+/* Side-by-side: tenants top spend + model breakdown */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.t-table { width: 100%; font-size: 12.5px; }
+.t-table th { text-align: left; padding: 7px 14px; color: var(--muted); font-weight: 500; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+.t-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--ink-2); }
+.t-table tr:last-child td { border-bottom: 0; }
+.t-table tr:hover td { background: var(--panel-2); }
+.t-table .tab { font-family: 'JetBrains Mono'; }
+.t-table .bar-inline { display: inline-block; vertical-align: middle; height: 4px; border-radius: 999px; background: var(--accent); margin-right: 8px; }
+.bar-cool { background: var(--indigo) !important; }
+.bar-pink { background: var(--pink) !important; }
+.bar-emerald { background: var(--emerald) !important; }
+.bar-amber { background: var(--amber) !important; }
+.bar-rose { background: var(--rose) !important; }
+
+/* Anomaly callout */
+.callout { display: flex; gap: 12px; padding: 14px 18px; background: linear-gradient(135deg, rgba(251,191,36,0.07), rgba(251,113,133,0.07)); border: 1px solid rgba(251,191,36,0.25); border-radius: 8px; margin-bottom: 16px; }
+.callout-ico { width: 24px; height: 24px; border-radius: 6px; background: rgba(251,191,36,0.15); color: #fcd34d; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.callout-body { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+.callout-body strong { color: var(--ink); }
+.callout-body .mono { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 5 H13 V8 H3 Z M3 9 H13 V12 H3 Z M8 13 V15 M6 14 H10"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Bastion</div>
+      <div class="brand-tag">LLM GATEWAY · prod-us-east-1</div>
+    </div>
+  </div>
+  <div style="flex:1"></div>
+  <span class="live-pill"><span class="dot"></span>live · cost meter</span>
+  <button class="btn">CSV</button>
+  <button class="btn">Set budget</button>
+</div>
+
+<nav class="subnav">
+  <a href="index.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12 L6 7 L9 10 L14 4"/></svg>Overview</a>
+  <a href="providers.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="8" r="2.5"/><circle cx="11" cy="8" r="2.5"/><path d="M7.5 8 H8.5"/></svg>Providers</a>
+  <a href="traces.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4 H6 V14 H2 Z M7 7 H11 V14 H7 Z M12 5 H14 V14 H12 Z"/></svg>Traces</a>
+  <a class="active" href="spend.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2 V14 M5 5 H11 M5 11 H11"/></svg>Spend</a>
+  <a href="alerts.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5 V9 M8 11 V11.1"/></svg>Alerts <span class="chip rose" style="margin-left:5px">3</span></a>
+  <div class="right"><span>May 2026 · MTD</span><span class="kbd">⌘K</span></div>
+</nav>
+
+<main class="main">
+  <div class="head">
+    <div>
+      <div class="title">Spend</div>
+      <div class="subtitle">Real-time meter · billing reconciles nightly · <span class="mono">last sync 12s ago</span></div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <div class="timerange">
+        <span class="tr-opt">24h</span>
+        <span class="tr-opt">7d</span>
+        <span class="tr-opt active">MTD</span>
+        <span class="tr-opt">QTD</span>
+        <span class="tr-opt">YTD</span>
+      </div>
+      <button class="btn">Group: <b style="color:var(--ink)">tenant</b></button>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-ico">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2 L14 13 H2 Z M8 7 V10 M8 11 V11.1"/></svg>
+    </div>
+    <div class="callout-body">
+      <strong>Spend anomaly · orbital-agents</strong> · daily burn <span class="mono">$348.20</span> on 2026-05-18, <strong style="color:var(--rose)">+428%</strong> above 14-day baseline (<span class="mono">$65.83/day</span>). Driver: <span class="mono">claude-opus-4-7</span> output token volume tripled. <a href="#">Investigate →</a>
+    </div>
+  </div>
+
+  <div class="spend-hero">
+    <div class="hero-tile big">
+      <div class="hero-label">Spend MTD (May)</div>
+      <div class="hero-v big tab" style="color: var(--accent)">$24,809<span style="font-size:18px; color:var(--muted)">.18</span></div>
+      <div class="hero-sub">↗ on track to $38,210 by month-end · budget <span class="mono">$32,000</span></div>
+      <span class="hero-delta up">+18.7% vs forecast</span>
+    </div>
+    <div class="hero-tile">
+      <div class="hero-label">Today (so far)</div>
+      <div class="hero-v tab">$1,448</div>
+      <div class="hero-sub">14h 22m elapsed</div>
+      <span class="hero-delta up">+6.2%</span>
+    </div>
+    <div class="hero-tile">
+      <div class="hero-label">7-day avg</div>
+      <div class="hero-v tab">$1,322</div>
+      <div class="hero-sub">σ $214</div>
+      <span class="hero-delta down">−2.1%</span>
+    </div>
+    <div class="hero-tile">
+      <div class="hero-label">$ / 1M tokens</div>
+      <div class="hero-v tab">$8.41</div>
+      <div class="hero-sub">blended in+out</div>
+      <span class="hero-delta down">−0.32</span>
+    </div>
+    <div class="hero-tile">
+      <div class="hero-label">Cache saved</div>
+      <div class="hero-v tab" style="color: var(--emerald)">$4,108</div>
+      <div class="hero-sub">prefix · 71% hit rate</div>
+      <span class="hero-delta down">+$612 vs LW</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">Daily spend by provider</div>
+        <div class="panel-sub">stacked · MTD · USD</div>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="sw" style="background:var(--amber)"></span>anthropic</span>
+        <span class="legend-item"><span class="sw" style="background:var(--emerald)"></span>openai</span>
+        <span class="legend-item"><span class="sw" style="background:var(--indigo)"></span>gemini</span>
+        <span class="legend-item"><span class="sw" style="background:#fcd34d"></span>bedrock</span>
+        <span class="legend-item"><span class="sw" style="background:var(--pink)"></span>cohere</span>
+        <span class="legend-item"><span class="sw" style="background:var(--rose)"></span>mistral</span>
+      </div>
+    </div>
+    <div class="daily-bars">
+      <!-- 18 days, ordered most-recent-first -->
+      <div class="bar-row"><span class="day">May 18</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 980"></span><span class="bar-seg openai" style="flex: 380"></span><span class="bar-seg gemini" style="flex: 88"></span><span class="bar-seg bedrock" style="flex: 0"></span><span class="bar-seg cohere" style="flex: 0"></span></span><span class="total">$1,448</span></div>
+      <div class="bar-row"><span class="day">May 17</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 740"></span><span class="bar-seg openai" style="flex: 312"></span><span class="bar-seg gemini" style="flex: 121"></span><span class="bar-seg bedrock" style="flex: 89"></span><span class="bar-seg cohere" style="flex: 32"></span></span><span class="total">$1,294</span></div>
+      <div class="bar-row"><span class="day">May 16</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 812"></span><span class="bar-seg openai" style="flex: 248"></span><span class="bar-seg gemini" style="flex: 67"></span><span class="bar-seg bedrock" style="flex: 211"></span><span class="bar-seg cohere" style="flex: 18"></span></span><span class="total">$1,356</span></div>
+      <div class="bar-row"><span class="day">May 15</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 689"></span><span class="bar-seg openai" style="flex: 401"></span><span class="bar-seg gemini" style="flex: 102"></span><span class="bar-seg bedrock" style="flex: 144"></span><span class="bar-seg cohere" style="flex: 24"></span></span><span class="total">$1,360</span></div>
+      <div class="bar-row"><span class="day">May 14</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 712"></span><span class="bar-seg openai" style="flex: 288"></span><span class="bar-seg gemini" style="flex: 92"></span><span class="bar-seg bedrock" style="flex: 178"></span><span class="bar-seg cohere" style="flex: 22"></span></span><span class="total">$1,292</span></div>
+      <div class="bar-row"><span class="day">May 13</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 1244"></span><span class="bar-seg openai" style="flex: 312"></span><span class="bar-seg gemini" style="flex: 88"></span><span class="bar-seg bedrock" style="flex: 156"></span><span class="bar-seg cohere" style="flex: 28"></span></span><span class="total">$1,828</span></div>
+      <div class="bar-row"><span class="day">May 12</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 622"></span><span class="bar-seg openai" style="flex: 184"></span><span class="bar-seg gemini" style="flex: 72"></span><span class="bar-seg bedrock" style="flex: 102"></span><span class="bar-seg cohere" style="flex: 14"></span></span><span class="total">$994</span></div>
+      <div class="bar-row"><span class="day">May 11</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 488"></span><span class="bar-seg openai" style="flex: 162"></span><span class="bar-seg gemini" style="flex: 51"></span><span class="bar-seg bedrock" style="flex: 88"></span><span class="bar-seg cohere" style="flex: 12"></span></span><span class="total">$801</span></div>
+      <div class="bar-row"><span class="day">May 10</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 698"></span><span class="bar-seg openai" style="flex: 244"></span><span class="bar-seg gemini" style="flex: 71"></span><span class="bar-seg bedrock" style="flex: 121"></span><span class="bar-seg cohere" style="flex: 18"></span></span><span class="total">$1,152</span></div>
+      <div class="bar-row"><span class="day">May 9</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 740"></span><span class="bar-seg openai" style="flex: 281"></span><span class="bar-seg gemini" style="flex: 88"></span><span class="bar-seg bedrock" style="flex: 142"></span><span class="bar-seg cohere" style="flex: 22"></span></span><span class="total">$1,273</span></div>
+      <div class="bar-row"><span class="day">May 8</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 882"></span><span class="bar-seg openai" style="flex: 318"></span><span class="bar-seg gemini" style="flex: 102"></span><span class="bar-seg bedrock" style="flex: 88"></span><span class="bar-seg cohere" style="flex: 28"></span></span><span class="total">$1,418</span></div>
+      <div class="bar-row"><span class="day">May 7</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 612"></span><span class="bar-seg openai" style="flex: 248"></span><span class="bar-seg gemini" style="flex: 67"></span><span class="bar-seg bedrock" style="flex: 88"></span><span class="bar-seg cohere" style="flex: 14"></span></span><span class="total">$1,029</span></div>
+      <div class="bar-row"><span class="day">May 6</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 712"></span><span class="bar-seg openai" style="flex: 312"></span><span class="bar-seg gemini" style="flex: 82"></span><span class="bar-seg bedrock" style="flex: 142"></span><span class="bar-seg cohere" style="flex: 24"></span></span><span class="total">$1,272</span></div>
+      <div class="bar-row"><span class="day">May 5</span><span class="bar-stack"><span class="bar-seg anthropic" style="flex: 821"></span><span class="bar-seg openai" style="flex: 401"></span><span class="bar-seg gemini" style="flex: 121"></span><span class="bar-seg bedrock" style="flex: 188"></span><span class="bar-seg cohere" style="flex: 32"></span></span><span class="total">$1,563</span></div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">Top tenants by spend (MTD)</div>
+          <div class="panel-sub">218 active · top 8 listed · click to break down by model</div>
+        </div>
+        <button class="btn">All</button>
+      </div>
+      <table class="t-table">
+        <thead><tr><th>Tenant</th><th>Plan</th><th>Tokens</th><th>$ MTD</th><th>% share</th></tr></thead>
+        <tbody>
+          <tr><td>acme-prod</td><td><span class="chip cool">enterprise</span></td><td class="tab">218.4M</td><td class="tab">$5,841</td><td><span class="bar-inline" style="width:78px"></span><span class="tab">23.5%</span></td></tr>
+          <tr><td>orbital-agents <span class="chip rose" style="margin-left:6px">anomaly</span></td><td><span class="chip cool">enterprise</span></td><td class="tab">182.1M</td><td class="tab">$4,802</td><td><span class="bar-inline bar-rose" style="width:66px"></span><span class="tab">19.4%</span></td></tr>
+          <tr><td>globex-research</td><td><span class="chip cool">enterprise</span></td><td class="tab">144.3M</td><td class="tab">$3,612</td><td><span class="bar-inline" style="width:48px"></span><span class="tab">14.6%</span></td></tr>
+          <tr><td>parker-mobile</td><td><span class="chip emerald">team</span></td><td class="tab">98.7M</td><td class="tab">$2,184</td><td><span class="bar-inline" style="width:30px"></span><span class="tab">8.8%</span></td></tr>
+          <tr><td>fields-ai</td><td><span class="chip emerald">team</span></td><td class="tab">87.2M</td><td class="tab">$1,941</td><td><span class="bar-inline" style="width:26px"></span><span class="tab">7.8%</span></td></tr>
+          <tr><td>lumen-ops</td><td><span class="chip amber">free</span></td><td class="tab">68.4M</td><td class="tab">$1,512</td><td><span class="bar-inline bar-amber" style="width:21px"></span><span class="tab">6.1%</span></td></tr>
+          <tr><td>cardinal-research</td><td><span class="chip emerald">team</span></td><td class="tab">54.1M</td><td class="tab">$1,198</td><td><span class="bar-inline" style="width:16px"></span><span class="tab">4.8%</span></td></tr>
+          <tr><td>211 others</td><td><span style="color: var(--subtle); font-size: 11px;">mixed</span></td><td class="tab">128.9M</td><td class="tab">$3,720</td><td><span class="bar-inline bar-cool" style="width:50px"></span><span class="tab">15.0%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">By model (MTD)</div>
+          <div class="panel-sub">share + price-per-1M-tokens · blended in+out</div>
+        </div>
+      </div>
+      <table class="t-table">
+        <thead><tr><th>Model</th><th>Tokens</th><th>$ MTD</th><th>$/1M</th><th>Share</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip amber">A</span> claude-opus-4-7</td><td class="tab">312.4M</td><td class="tab">$8,961</td><td class="tab">$28.68</td><td><span class="bar-inline bar-amber" style="width:96px"></span><span class="tab">36.1%</span></td></tr>
+          <tr><td><span class="chip amber">A</span> claude-sonnet-4-6</td><td class="tab">198.7M</td><td class="tab">$4,182</td><td class="tab">$21.04</td><td><span class="bar-inline bar-amber" style="width:46px"></span><span class="tab">16.9%</span></td></tr>
+          <tr><td><span class="chip emerald">O</span> gpt-5</td><td class="tab">142.1M</td><td class="tab">$3,798</td><td class="tab">$26.74</td><td><span class="bar-inline bar-emerald" style="width:40px"></span><span class="tab">15.3%</span></td></tr>
+          <tr><td><span class="chip emerald">O</span> gpt-4o</td><td class="tab">98.2M</td><td class="tab">$2,184</td><td class="tab">$22.24</td><td><span class="bar-inline bar-emerald" style="width:24px"></span><span class="tab">8.8%</span></td></tr>
+          <tr><td><span class="chip cool">G</span> gemini-2.5-pro</td><td class="tab">87.4M</td><td class="tab">$1,841</td><td class="tab">$21.07</td><td><span class="bar-inline bar-cool" style="width:21px"></span><span class="tab">7.4%</span></td></tr>
+          <tr><td><span class="chip" style="background:rgba(252,211,77,0.15); color:#fcd34d">B</span> claude-3-7-sonnet@bedrock</td><td class="tab">68.4M</td><td class="tab">$1,512</td><td class="tab">$22.10</td><td><span class="bar-inline" style="background:#fcd34d; width:17px"></span><span class="tab">6.1%</span></td></tr>
+          <tr><td><span class="chip pink">C</span> rerank-v3</td><td class="tab">41.2M</td><td class="tab">$821</td><td class="tab">$19.93</td><td><span class="bar-inline bar-pink" style="width:9px"></span><span class="tab">3.3%</span></td></tr>
+          <tr><td><span class="chip emerald">O</span> o3-mini</td><td class="tab">21.4M</td><td class="tab">$418</td><td class="tab">$19.53</td><td><span class="bar-inline bar-emerald" style="width:5px"></span><span class="tab">1.7%</span></td></tr>
+          <tr><td><span style="color:var(--subtle); font-size: 11px;">other (8)</span></td><td class="tab">31.2M</td><td class="tab">$1,092</td><td class="tab">—</td><td><span class="bar-inline" style="background: var(--subtle); width:12px"></span><span class="tab">4.4%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

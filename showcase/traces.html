@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Traces · Bastion Gateway</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2306b6d4'/><stop offset='1' stop-color='%230ea5e9'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='%230f172a'/><path d='M8 10 H24 V14 H8 Z M8 16 H24 V20 H8 Z M16 22 V26 M12 24 H20' stroke='url(%23g)' fill='none' stroke-width='1.5' stroke-linecap='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1018; --panel: #111824; --panel-2: #161e2c; --panel-3: #1a2336;
+  --ink: #e6edf7; --ink-2: #c1cbdb; --muted: #7d8aa1; --subtle: #525d75;
+  --border: #1d2738; --border-strong: #2a3548;
+  --accent: #22d3ee; --emerald: #34d399; --amber: #fbbf24; --rose: #fb7185;
+  --indigo: #818cf8; --pink: #f472b6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; letter-spacing: -0.011em; line-height: 1.5; }
+.mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+.tab { font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-decoration: none; }
+
+.topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 9px 22px; display: flex; align-items: center; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 0 12px rgba(99,102,241,0.4); }
+.brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+.brand-tag { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+.subnav { background: var(--panel); border-bottom: 1px solid var(--border); padding: 0 22px; display: flex; gap: 22px; }
+.subnav a { padding: 9px 0; font-size: 13px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 7px; }
+.subnav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+.subnav a svg { width: 13px; height: 13px; }
+.subnav .right { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 11.5px; color: var(--muted); }
+.chip { display: inline-flex; align-items: center; padding: 1px 7px; font-size: 10.5px; border-radius: 4px; font-family: 'JetBrains Mono'; }
+.chip.acc { background: rgba(34,211,238,0.12); color: var(--accent); }
+.chip.cool { background: rgba(129,140,248,0.12); color: #a5b4fc; }
+.chip.amber { background: rgba(251,191,36,0.12); color: #fcd34d; }
+.chip.emerald { background: rgba(52,211,153,0.12); color: var(--emerald); }
+.chip.rose { background: rgba(251,113,133,0.12); color: var(--rose); }
+.chip.pink { background: rgba(244,114,182,0.12); color: #f9a8d4; }
+.kbd { padding: 1px 5px; border: 1px solid var(--border-strong); border-radius: 3px; font-size: 10px; background: var(--panel-2); color: var(--muted); font-family: 'JetBrains Mono'; }
+.live-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; background: rgba(52,211,153,0.1); color: var(--emerald); font-size: 11px; }
+.live-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--ink-2); }
+
+/* Trace search + waterfall layout */
+.main { display: grid; grid-template-columns: 380px 1fr; gap: 0; min-height: calc(100vh - 90px); }
+.left { background: var(--panel); border-right: 1px solid var(--border); padding: 16px 0; overflow-y: auto; }
+.right { background: var(--bg); padding: 16px 20px; }
+.search { padding: 0 16px 14px; border-bottom: 1px solid var(--border); }
+.search-box { display: flex; align-items: center; gap: 8px; padding: 7px 11px; background: var(--panel-2); border: 1px solid var(--border-strong); border-radius: 6px; font-size: 12.5px; }
+.search-box .q { flex: 1; color: var(--muted); }
+.search-tags { padding: 8px 16px 0; display: flex; gap: 4px; flex-wrap: wrap; }
+.search-tag { padding: 2px 7px; font-size: 10.5px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border); color: var(--ink-2); font-family: 'JetBrains Mono'; }
+
+.trace-row { display: grid; grid-template-columns: 1fr 90px; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.trace-row:hover { background: var(--panel-2); }
+.trace-row.active { background: rgba(34,211,238,0.06); border-left: 2px solid var(--accent); }
+.trace-method { font-size: 12.5px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+.trace-meta { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono'; line-height: 1.4; }
+.trace-status { font-family: 'JetBrains Mono'; font-size: 11px; text-align: right; }
+.trace-status .lat { color: var(--ink-2); font-weight: 500; }
+.trace-status .when { color: var(--subtle); display: block; margin-top: 2px; font-size: 10.5px; }
+.trace-status.err .lat { color: var(--rose); }
+
+/* Right panel — trace detail */
+.trace-h { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-bottom: 12px; }
+.trace-h-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+.trace-h-id { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--muted); }
+.trace-h-meta { display: flex; gap: 18px; margin-top: 10px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.trace-h-meta strong { color: var(--ink-2); font-family: 'JetBrains Mono'; font-weight: 500; }
+
+.waterfall { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.wf-head { padding: 9px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.wf-title { font-size: 13px; font-weight: 600; }
+.wf-axis { padding: 6px 16px; font-family: 'JetBrains Mono'; font-size: 10.5px; color: var(--subtle); display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.wf-row { display: grid; grid-template-columns: 200px 1fr 80px; gap: 10px; align-items: center; padding: 5px 16px; font-size: 11.5px; border-bottom: 1px solid rgba(29,39,56,0.5); }
+.wf-row:hover { background: var(--panel-2); }
+.wf-name { display: flex; align-items: center; gap: 6px; }
+.wf-name .ico { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.wf-name .label { color: var(--ink-2); font-family: 'JetBrains Mono'; }
+.wf-name .label.dim { padding-left: 14px; color: var(--muted); }
+.wf-name .label.dim2 { padding-left: 28px; color: var(--muted); }
+.wf-bar-wrap { position: relative; height: 16px; background: rgba(255,255,255,0.02); border-radius: 2px; }
+.wf-bar { position: absolute; height: 100%; border-radius: 2px; opacity: 0.85; }
+.wf-bar.accent { background: var(--accent); }
+.wf-bar.indigo { background: var(--indigo); }
+.wf-bar.amber  { background: var(--amber); }
+.wf-bar.emerald{ background: var(--emerald); }
+.wf-bar.rose   { background: var(--rose); }
+.wf-bar.pink   { background: var(--pink); }
+.wf-bar.cool   { background: #a5b4fc; }
+.wf-lat { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--ink-2); text-align: right; }
+.wf-lat.dim { color: var(--muted); }
+
+.attrs { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; padding: 14px 18px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; }
+.attr { display: grid; grid-template-columns: 130px 1fr; gap: 12px; font-size: 12px; }
+.attr-k { color: var(--muted); font-family: 'JetBrains Mono'; font-size: 11px; }
+.attr-v { color: var(--ink-2); font-family: 'JetBrains Mono'; font-size: 11.5px; }
+.attr-v .acc { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 5 H13 V8 H3 Z M3 9 H13 V12 H3 Z M8 13 V15 M6 14 H10"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Bastion</div>
+      <div class="brand-tag">LLM GATEWAY · prod-us-east-1</div>
+    </div>
+  </div>
+  <div style="flex:1"></div>
+  <span class="live-pill"><span class="dot"></span>live</span>
+  <button class="btn">Export trace</button>
+</div>
+
+<nav class="subnav">
+  <a href="index.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12 L6 7 L9 10 L14 4"/></svg>Overview</a>
+  <a href="providers.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="8" r="2.5"/><circle cx="11" cy="8" r="2.5"/><path d="M7.5 8 H8.5"/></svg>Providers</a>
+  <a class="active" href="traces.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4 H6 V14 H2 Z M7 7 H11 V14 H7 Z M12 5 H14 V14 H12 Z"/></svg>Traces</a>
+  <a href="spend.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2 V14 M5 5 H11 M5 11 H11"/></svg>Spend</a>
+  <a href="alerts.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5 V9 M8 11 V11.1"/></svg>Alerts <span class="chip rose" style="margin-left:5px">3</span></a>
+  <div class="right"><span>last 15m</span><span class="kbd">⌘K</span></div>
+</nav>
+
+<div class="main">
+  <aside class="left">
+    <div class="search">
+      <div class="search-box">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11 L14 14"/></svg>
+        <span class="q">tenant:acme-prod model:opus-4-7</span>
+        <span class="kbd">⏎</span>
+      </div>
+      <div class="search-tags">
+        <span class="search-tag">status:error</span>
+        <span class="search-tag">latency:&gt;p95</span>
+        <span class="search-tag">+ filter</span>
+      </div>
+    </div>
+
+    <div class="trace-row">
+      <div>
+        <div class="trace-method">POST /v1/messages</div>
+        <div class="trace-meta">tenant=acme-prod · opus-4-7 · 1,842 → 712 tok</div>
+      </div>
+      <div class="trace-status"><span class="lat">1.94s</span><span class="when">12s ago</span></div>
+    </div>
+    <div class="trace-row active">
+      <div>
+        <div class="trace-method">POST /v1/messages</div>
+        <div class="trace-meta">tenant=acme-prod · opus-4-7 · 2,914 → 408 tok</div>
+      </div>
+      <div class="trace-status"><span class="lat" style="color:var(--accent)">3.21s</span><span class="when">26s ago</span></div>
+    </div>
+    <div class="trace-row">
+      <div>
+        <div class="trace-method">POST /v1/chat/completions</div>
+        <div class="trace-meta">tenant=orbital-agents · gpt-5 · 4,021 → 1,108 tok</div>
+      </div>
+      <div class="trace-status"><span class="lat">2.18s</span><span class="when">41s ago</span></div>
+    </div>
+    <div class="trace-row">
+      <div>
+        <div class="trace-method">POST /v1/messages <span class="chip rose">429</span></div>
+        <div class="trace-meta">tenant=parker-mobile · sonnet-4-6 · rate-limited</div>
+      </div>
+      <div class="trace-status err"><span class="lat">82ms</span><span class="when">1m ago</span></div>
+    </div>
+    <div class="trace-row">
+      <div>
+        <div class="trace-method">POST /v1/embeddings</div>
+        <div class="trace-meta">tenant=globex-research · text-embedding-3-large · batch=64</div>
+      </div>
+      <div class="trace-status"><span class="lat">0.41s</span><span class="when">1m ago</span></div>
+    </div>
+    <div class="trace-row">
+      <div>
+        <div class="trace-method">POST /v1/rerank</div>
+        <div class="trace-meta">tenant=acme-prod · cohere/rerank-v3 · 24 docs</div>
+      </div>
+      <div class="trace-status"><span class="lat">312ms</span><span class="when">1m ago</span></div>
+    </div>
+    <div class="trace-row">
+      <div>
+        <div class="trace-method">POST /v1/messages <span class="chip amber">retry</span></div>
+        <div class="trace-meta">tenant=acme-prod · opus-4-7 → bedrock fallback</div>
+      </div>
+      <div class="trace-status"><span class="lat">2.84s</span><span class="when">2m ago</span></div>
+    </div>
+    <div class="trace-row">
+      <div>
+        <div class="trace-method">POST /v1/chat/completions</div>
+        <div class="trace-meta">tenant=fields-ai · gpt-4o · 6,401 → 2,114 tok</div>
+      </div>
+      <div class="trace-status"><span class="lat">4.18s</span><span class="when">2m ago</span></div>
+    </div>
+    <div class="trace-row">
+      <div>
+        <div class="trace-method">POST /v1/messages</div>
+        <div class="trace-meta">tenant=lumen-ops · haiku-4-5 · stream=true</div>
+      </div>
+      <div class="trace-status"><span class="lat">810ms</span><span class="when">3m ago</span></div>
+    </div>
+  </aside>
+
+  <main class="right">
+    <div class="trace-h">
+      <div class="trace-h-title">
+        <span class="chip emerald">200</span>
+        <span>POST /v1/messages</span>
+        <span class="trace-h-id">trace_b8c14e2a · span_root_01</span>
+      </div>
+      <div class="trace-h-meta">
+        <span>Tenant: <strong>acme-prod</strong></span>
+        <span>Model: <strong>claude-opus-4-7</strong></span>
+        <span>Route: <strong>priority=10 · weighted</strong></span>
+        <span>Tokens: <strong>2,914 → 408</strong></span>
+        <span>Cost: <strong>$0.0438</strong></span>
+        <span>Cached prefix: <strong style="color:var(--emerald)">71% · 2,074 tok</strong></span>
+        <span>Time: <strong>14:34:18.412 UTC</strong></span>
+      </div>
+    </div>
+
+    <div class="waterfall">
+      <div class="wf-head">
+        <div class="wf-title">Span waterfall · 14 spans · 3.21s wall time</div>
+        <div style="font-size: 11px; color: var(--muted); display:flex; gap:14px;">
+          <span><span class="chip acc">gateway</span></span>
+          <span><span class="chip indigo">router</span></span>
+          <span><span class="chip amber">provider</span></span>
+          <span><span class="chip emerald">cache</span></span>
+        </div>
+      </div>
+      <div class="wf-axis"><span>0ms</span><span>500ms</span><span>1.0s</span><span>1.5s</span><span>2.0s</span><span>2.5s</span><span>3.0s</span></div>
+
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--accent)"></span><span class="label">gateway.handler</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar accent" style="left:0%; width:100%"></div></div>
+        <div class="wf-lat">3.21s</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--accent)"></span><span class="label dim">auth.verify</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar accent" style="left:0%; width:1.2%"></div></div>
+        <div class="wf-lat dim">38ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--accent)"></span><span class="label dim">quota.check</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar accent" style="left:1.2%; width:0.3%"></div></div>
+        <div class="wf-lat dim">9ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--indigo)"></span><span class="label dim">router.match</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar indigo" style="left:1.5%; width:0.6%"></div></div>
+        <div class="wf-lat dim">19ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--emerald)"></span><span class="label dim">cache.prefix.lookup</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar emerald" style="left:2.1%; width:1.4%"></div></div>
+        <div class="wf-lat dim">44ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--emerald)"></span><span class="label dim2">cache.HIT · 2074 tok</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar emerald" style="left:3.5%; width:0.2%"></div></div>
+        <div class="wf-lat dim">6ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--amber)"></span><span class="label dim">provider.anthropic.POST</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar amber" style="left:3.7%; width:92%"></div></div>
+        <div class="wf-lat dim">2.96s</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--amber)"></span><span class="label dim2">tls.handshake</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar amber" style="left:3.7%; width:1.2%"></div></div>
+        <div class="wf-lat dim">39ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--amber)"></span><span class="label dim2">first-byte (TTFT)</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar amber" style="left:4.9%; width:7.4%"></div></div>
+        <div class="wf-lat dim">238ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--amber)"></span><span class="label dim2">streaming.deltas</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar amber" style="left:12.3%; width:81.4%"></div></div>
+        <div class="wf-lat dim">2.61s</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--indigo)"></span><span class="label dim">stream.proxy</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar indigo" style="left:12.3%; width:81.4%"></div></div>
+        <div class="wf-lat dim">2.61s</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--accent)"></span><span class="label dim">usage.record</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar accent" style="left:95.6%; width:0.9%"></div></div>
+        <div class="wf-lat dim">28ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--accent)"></span><span class="label dim">audit.write</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar accent" style="left:96.5%; width:0.7%"></div></div>
+        <div class="wf-lat dim">22ms</div>
+      </div>
+      <div class="wf-row">
+        <div class="wf-name"><span class="ico" style="background:var(--pink)"></span><span class="label dim">webhook.fan-out</span></div>
+        <div class="wf-bar-wrap"><div class="wf-bar pink" style="left:97.2%; width:2.4%"></div></div>
+        <div class="wf-lat dim">76ms</div>
+      </div>
+    </div>
+
+    <div class="attrs">
+      <div class="attr"><span class="attr-k">http.status</span><span class="attr-v"><span class="acc">200</span></span></div>
+      <div class="attr"><span class="attr-k">http.method</span><span class="attr-v">POST</span></div>
+      <div class="attr"><span class="attr-k">gateway.route_id</span><span class="attr-v">acme-priority-10</span></div>
+      <div class="attr"><span class="attr-k">gateway.shard</span><span class="attr-v">prod-us-east-1-a</span></div>
+      <div class="attr"><span class="attr-k">tenant.id</span><span class="attr-v"><span class="acc">acme-prod</span></span></div>
+      <div class="attr"><span class="attr-k">tenant.tier</span><span class="attr-v">enterprise</span></div>
+      <div class="attr"><span class="attr-k">provider</span><span class="attr-v">anthropic</span></div>
+      <div class="attr"><span class="attr-k">provider.region</span><span class="attr-v">us-east-1</span></div>
+      <div class="attr"><span class="attr-k">model</span><span class="attr-v">claude-opus-4-7</span></div>
+      <div class="attr"><span class="attr-k">model.requested</span><span class="attr-v">claude-opus-4-7</span></div>
+      <div class="attr"><span class="attr-k">tokens.input</span><span class="attr-v">2,914</span></div>
+      <div class="attr"><span class="attr-k">tokens.output</span><span class="attr-v">408</span></div>
+      <div class="attr"><span class="attr-k">tokens.cache_hit</span><span class="attr-v">2,074 (71%)</span></div>
+      <div class="attr"><span class="attr-k">cost.usd</span><span class="attr-v">0.0438</span></div>
+      <div class="attr"><span class="attr-k">latency.ttft_ms</span><span class="attr-v">238</span></div>
+      <div class="attr"><span class="attr-k">latency.total_ms</span><span class="attr-v">3,212</span></div>
+      <div class="attr"><span class="attr-k">retry.count</span><span class="attr-v">0</span></div>
+      <div class="attr"><span class="attr-k">stream</span><span class="attr-v">true</span></div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

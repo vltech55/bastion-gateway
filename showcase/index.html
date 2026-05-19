@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bastion · LLM Gateway · Live Metrics</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2306b6d4'/><stop offset='1' stop-color='%230ea5e9'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='%230f172a'/><path d='M8 10 H24 V14 H8 Z M8 16 H24 V20 H8 Z M16 22 V26 M12 24 H20' stroke='url(%23g)' fill='none' stroke-width='1.5' stroke-linecap='round'/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1018;
+  --panel: #111824;
+  --panel-2: #161e2c;
+  --ink: #e6edf7;
+  --ink-2: #c1cbdb;
+  --muted: #7d8aa1;
+  --subtle: #525d75;
+  --border: #1d2738;
+  --border-strong: #2a3548;
+  --accent: #22d3ee;
+  --accent-soft: rgba(34,211,238,0.12);
+  --indigo: #818cf8;
+  --emerald: #34d399;
+  --amber: #fbbf24;
+  --rose: #fb7185;
+  --pink: #f472b6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; font-feature-settings: 'cv11', 'ss01'; -webkit-font-smoothing: antialiased; letter-spacing: -0.011em; line-height: 1.5; }
+code, pre, .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+.tab { font-variant-numeric: tabular-nums; }
+
+/* Topbar */
+.topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 9px 22px; display: flex; align-items: center; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 0 12px rgba(99,102,241,0.5); }
+.brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+.brand-tag { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+.crumb { color: var(--muted); font-size: 13px; }
+.crumb b { color: var(--ink); font-weight: 500; }
+.kbd { padding: 1px 5px; border: 1px solid var(--border-strong); border-radius: 3px; font-size: 10px; background: var(--panel-2); color: var(--muted); font-family: 'JetBrains Mono'; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--ink-2); }
+.btn:hover { background: var(--panel); color: var(--ink); }
+.btn-primary { background: var(--accent); color: #062a36; border-color: var(--accent); font-weight: 600; }
+
+.tb-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; }
+.tb-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+.tb-pill.live { background: rgba(52,211,153,0.1); color: #34d399; }
+.tb-pill.live .dot { background: var(--emerald); box-shadow: 0 0 0 0 rgba(52,211,153,0.5); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
+  50% { box-shadow: 0 0 0 4px rgba(52,211,153,0); }
+}
+
+.layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 56px); }
+
+.sidebar { background: var(--panel); border-right: 1px solid var(--border); padding: 16px 12px; }
+.sb-section { margin-bottom: 18px; }
+.sb-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--subtle); padding: 0 10px 5px; font-weight: 600; }
+.sb-item { display: flex; align-items: center; gap: 9px; padding: 5px 10px; border-radius: 5px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.sb-item:hover { background: var(--panel-2); }
+.sb-item.active { background: var(--accent-soft); color: var(--accent); }
+.sb-item svg { width: 14px; height: 14px; opacity: 0.85; }
+.sb-item.muted { color: var(--muted); }
+
+.main { padding: 22px 28px; overflow-x: hidden; }
+
+.head-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.title { font-size: 22px; font-weight: 600; letter-spacing: -0.018em; }
+.subtitle { color: var(--muted); font-size: 13px; }
+.timerange { display: inline-flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; }
+.tr-opt { padding: 3px 9px; font-size: 12px; color: var(--muted); border-radius: 4px; cursor: pointer; }
+.tr-opt.active { background: var(--panel-2); color: var(--ink); }
+.split { flex: 1; }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 18px; }
+.kpi { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+.kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+.kpi-value { font-size: 22px; font-weight: 600; font-family: 'JetBrains Mono'; color: var(--ink); display: flex; align-items: baseline; gap: 4px; }
+.kpi-unit { font-size: 12px; color: var(--muted); font-weight: 400; }
+.kpi-delta { font-size: 11px; font-weight: 600; margin-top: 4px; font-family: 'JetBrains Mono'; }
+.kpi-delta.up { color: var(--emerald); }
+.kpi-delta.down { color: var(--rose); }
+.kpi-spark { height: 18px; margin-top: 4px; }
+
+/* Panels grid */
+.panels { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+.panel-title { font-size: 12.5px; font-weight: 600; letter-spacing: -0.01em; }
+.panel-meta { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono'; }
+.panel-body { padding: 12px 14px; }
+
+.legend { display: flex; gap: 10px; font-size: 11px; color: var(--muted); }
+.legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.legend-item .swatch { width: 7px; height: 7px; border-radius: 1px; }
+
+/* Table */
+.t-table { width: 100%; font-size: 12.5px; }
+.t-table th { text-align: left; padding: 6px 12px; color: var(--muted); font-weight: 500; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+.t-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--ink-2); }
+.t-table tr:hover td { background: var(--panel-2); }
+.t-table .tab { font-family: 'JetBrains Mono'; }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+.bar { height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.bar-fill { height: 100%; }
+
+.errlog { font-family: 'JetBrains Mono'; font-size: 11.5px; line-height: 1.7; padding: 6px 12px; max-height: 220px; overflow: auto; }
+.err-line { color: var(--ink-2); padding: 1px 0; }
+.err-line .t { color: var(--subtle); }
+.err-line .lvl-info { color: #67e8f9; }
+.err-line .lvl-warn { color: #fbbf24; }
+.err-line .lvl-err  { color: #fb7185; }
+.err-line .src { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 5 H13 V8 H3 Z M3 9 H13 V12 H3 Z M8 13 V15 M6 14 H10"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">Bastion</div>
+      <div class="brand-tag">LLM GATEWAY · prod-us-east-1</div>
+    </div>
+  </div>
+  <div class="crumb">Routes · <b>Production gateway</b> · Overview</div>
+  <div class="split"></div>
+  <span class="tb-pill live"><span class="dot"></span>live · 5s refresh</span>
+  <div class="timerange">
+    <span class="tr-opt">15m</span>
+    <span class="tr-opt active">1h</span>
+    <span class="tr-opt">6h</span>
+    <span class="tr-opt">24h</span>
+    <span class="tr-opt">7d</span>
+  </div>
+  <button class="btn">Filters</button>
+  <button class="btn">Export</button>
+  <button class="btn btn-primary">Incident</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-section">
+      <div class="sb-label">Routes</div>
+      <div class="sb-item active">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M2 8 H14 M8 2 A6 6 0 0 1 8 14 A6 6 0 0 1 8 2"/></svg>
+        Production gateway
+      </div>
+      <div class="sb-item muted"><span style="width:14px"></span>Staging</div>
+      <div class="sb-item muted"><span style="width:14px"></span>Eu-west-1</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Observability</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12 L6 7 L9 10 L14 4"/></svg>Metrics</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4 H13 M3 8 H13 M3 12 H8"/></svg>Logs</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5"/><path d="M8 3 V8 L11 11"/></svg>Traces</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5 V9 M8 11 V11.1"/></svg>Alerts <span style="margin-left:auto; padding: 0 5px; background: rgba(251,113,133,0.15); color: var(--rose); border-radius: 4px; font-size: 10px; font-family: 'JetBrains Mono';">3</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Governance</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2 L13 4 V8 C13 11 8 14 8 14 C8 14 3 11 3 8 V4 Z"/></svg>Policies</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M5 8 L7 10 L11 6"/></svg>Quotas</div>
+      <div class="sb-item"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3 L11 3 L13 5 V13 H3 V5 Z M5 7 H11"/></svg>Audit log</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Tenants (218)</div>
+      <div class="sb-item">acme-prod</div>
+      <div class="sb-item">globex-research</div>
+      <div class="sb-item">parker-mobile</div>
+      <div class="sb-item muted">+ 215 more</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="head-row">
+      <div>
+        <div class="title">Production gateway</div>
+        <div class="subtitle">prod-us-east-1 · 9 backends · 218 active tenants · v1.4.2</div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-label">Requests / sec</div>
+        <div class="kpi-value tab">847<span class="kpi-unit">rps</span></div>
+        <div class="kpi-delta up">↗ +12.4%</div>
+        <svg class="kpi-spark" viewBox="0 0 100 18" preserveAspectRatio="none">
+          <polyline points="0,12 8,11 16,10 24,9 32,11 40,8 48,7 56,9 64,6 72,7 80,5 88,4 96,3" fill="none" stroke="#22d3ee" stroke-width="1.5"/>
+          <polygon points="0,12 8,11 16,10 24,9 32,11 40,8 48,7 56,9 64,6 72,7 80,5 88,4 96,3 96,18 0,18" fill="url(#sg1)" opacity="0.3"/>
+          <defs><linearGradient id="sg1" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>
+        </svg>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">p50 latency</div>
+        <div class="kpi-value tab">312<span class="kpi-unit">ms</span></div>
+        <div class="kpi-delta up">↘ −18 ms</div>
+        <svg class="kpi-spark" viewBox="0 0 100 18" preserveAspectRatio="none">
+          <polyline points="0,4 8,6 16,5 24,8 32,7 40,9 48,8 56,10 64,9 72,11 80,10 88,12 96,11" fill="none" stroke="#34d399" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">p95 latency</div>
+        <div class="kpi-value tab">1.42<span class="kpi-unit">s</span></div>
+        <div class="kpi-delta down">↗ +84 ms</div>
+        <svg class="kpi-spark" viewBox="0 0 100 18" preserveAspectRatio="none">
+          <polyline points="0,8 8,9 16,7 24,10 32,8 40,9 48,11 56,8 64,9 72,6 80,5 88,4 96,3" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Error rate</div>
+        <div class="kpi-value tab" style="color:#fbbf24;">0.18<span class="kpi-unit">%</span></div>
+        <div class="kpi-delta down">↗ +0.04 pp</div>
+        <svg class="kpi-spark" viewBox="0 0 100 18" preserveAspectRatio="none">
+          <polyline points="0,13 8,14 16,13 24,12 32,11 40,12 48,10 56,11 64,9 72,10 80,8 88,7 96,8" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Cache hit ratio</div>
+        <div class="kpi-value tab" style="color:#34d399">61.3<span class="kpi-unit">%</span></div>
+        <div class="kpi-delta up">↗ +3.1 pp</div>
+        <svg class="kpi-spark" viewBox="0 0 100 18" preserveAspectRatio="none">
+          <polyline points="0,10 8,9 16,8 24,9 32,7 40,6 48,5 56,7 64,5 72,4 80,5 88,3 96,3" fill="none" stroke="#34d399" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Spend / hour</div>
+        <div class="kpi-value tab">$14.82</div>
+        <div class="kpi-delta up">↗ +$1.74</div>
+        <svg class="kpi-spark" viewBox="0 0 100 18" preserveAspectRatio="none">
+          <polyline points="0,11 8,9 16,10 24,7 32,8 40,5 48,6 56,4 64,5 72,3 80,4 88,2 96,3" fill="none" stroke="#f472b6" stroke-width="1.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Request rate · stacked by provider</div>
+            <div class="panel-meta">sum(rate(gateway_requests_total[1m])) by (provider) · 1h</div>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><span class="swatch" style="background:#22d3ee"></span>anthropic</span>
+            <span class="legend-item"><span class="swatch" style="background:#818cf8"></span>openai</span>
+            <span class="legend-item"><span class="swatch" style="background:#fbbf24"></span>bedrock</span>
+            <span class="legend-item"><span class="swatch" style="background:#f472b6"></span>cohere</span>
+          </div>
+        </div>
+        <div class="panel-body" style="padding: 8px 14px;">
+          <svg viewBox="0 0 700 200" preserveAspectRatio="none" style="width:100%; height:220px;">
+            <defs>
+              <linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#22d3ee" stop-opacity="0.6"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0.05"/></linearGradient>
+              <linearGradient id="gb" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#818cf8" stop-opacity="0.55"/><stop offset="100%" stop-color="#818cf8" stop-opacity="0.05"/></linearGradient>
+              <linearGradient id="gc" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#fbbf24" stop-opacity="0.5"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0.05"/></linearGradient>
+              <linearGradient id="gd" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#f472b6" stop-opacity="0.5"/><stop offset="100%" stop-color="#f472b6" stop-opacity="0.05"/></linearGradient>
+            </defs>
+            <!-- grid -->
+            <line x1="0" y1="50" x2="700" y2="50" stroke="#1d2738" stroke-width="0.5"/>
+            <line x1="0" y1="100" x2="700" y2="100" stroke="#1d2738" stroke-width="0.5"/>
+            <line x1="0" y1="150" x2="700" y2="150" stroke="#1d2738" stroke-width="0.5"/>
+            <!-- stacked areas -->
+            <polygon points="0,140 35,135 70,128 105,125 140,118 175,115 210,108 245,105 280,102 315,98 350,95 385,90 420,88 455,85 490,82 525,80 560,75 595,70 630,65 665,62 700,58 700,200 0,200" fill="url(#gd)" stroke="none"/>
+            <polygon points="0,110 35,103 70,100 105,96 140,90 175,86 210,82 245,80 280,75 315,72 350,68 385,65 420,62 455,58 490,55 525,52 560,48 595,45 630,42 665,40 700,38 700,200 0,200" fill="url(#gc)" stroke="none"/>
+            <polygon points="0,75 35,70 70,65 105,60 140,58 175,52 210,50 245,46 280,42 315,40 350,38 385,35 420,32 455,28 490,26 525,22 560,20 595,18 630,16 665,14 700,12 700,200 0,200" fill="url(#gb)" stroke="none"/>
+            <polygon points="0,40 35,38 70,35 105,30 140,28 175,25 210,22 245,20 280,18 315,15 350,13 385,12 420,11 455,9 490,8 525,7 560,5 595,4 630,3 665,2 700,2 700,200 0,200" fill="url(#ga)" stroke="none"/>
+            <!-- top stroke -->
+            <polyline points="0,40 35,38 70,35 105,30 140,28 175,25 210,22 245,20 280,18 315,15 350,13 385,12 420,11 455,9 490,8 525,7 560,5 595,4 630,3 665,2 700,2" fill="none" stroke="#22d3ee" stroke-width="1.4"/>
+            <!-- spike marker -->
+            <line x1="560" y1="0" x2="560" y2="200" stroke="#fb7185" stroke-width="0.5" stroke-dasharray="2 2"/>
+            <text x="565" y="14" font-family="JetBrains Mono" font-size="9" fill="#fb7185">cache hit ↗</text>
+            <!-- x-axis labels -->
+            <text x="0" y="195" font-size="9" fill="#525d75" font-family="JetBrains Mono">14:00</text>
+            <text x="170" y="195" font-size="9" fill="#525d75" font-family="JetBrains Mono">14:15</text>
+            <text x="340" y="195" font-size="9" fill="#525d75" font-family="JetBrains Mono">14:30</text>
+            <text x="510" y="195" font-size="9" fill="#525d75" font-family="JetBrains Mono">14:45</text>
+            <text x="670" y="195" font-size="9" fill="#525d75" font-family="JetBrains Mono">15:00</text>
+            <!-- y-axis labels -->
+            <text x="6" y="44" font-size="9" fill="#525d75" font-family="JetBrains Mono">900</text>
+            <text x="6" y="94" font-size="9" fill="#525d75" font-family="JetBrains Mono">600</text>
+            <text x="6" y="144" font-size="9" fill="#525d75" font-family="JetBrains Mono">300</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Latency distribution · p95</div>
+            <div class="panel-meta">by route · last hour</div>
+          </div>
+        </div>
+        <div class="panel-body" style="padding-top: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;"><span>/v1/messages</span><span class="tab mono" style="color:#34d399">412 ms</span></div>
+              <div class="bar"><div class="bar-fill" style="width:32%; background:#34d399"></div></div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;"><span>/v1/embeddings</span><span class="tab mono" style="color:#34d399">68 ms</span></div>
+              <div class="bar"><div class="bar-fill" style="width:8%; background:#34d399"></div></div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;"><span>/v1/chat/completions</span><span class="tab mono" style="color:#fbbf24">1,420 ms</span></div>
+              <div class="bar"><div class="bar-fill" style="width:78%; background:#fbbf24"></div></div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;"><span>/v1/responses (stream)</span><span class="tab mono" style="color:#fbbf24">1,210 ms</span></div>
+              <div class="bar"><div class="bar-fill" style="width:64%; background:#fbbf24"></div></div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;"><span>/v1/batch</span><span class="tab mono" style="color:#fb7185">2,840 ms</span></div>
+              <div class="bar"><div class="bar-fill" style="width:96%; background:#fb7185"></div></div>
+            </div>
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;"><span>/healthz</span><span class="tab mono" style="color:#34d399">2 ms</span></div>
+              <div class="bar"><div class="bar-fill" style="width:1%; background:#34d399"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panels" style="margin-top: 10px;">
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Top tenants by spend (1h)</div><div class="panel-meta">sum(usd_total) by (tenant)</div></div></div>
+        <table class="t-table">
+          <thead><tr><th>Tenant</th><th>Plan</th><th style="text-align:right">Req</th><th style="text-align:right">Tokens</th><th style="text-align:right">Spend</th><th style="text-align:right">p95</th></tr></thead>
+          <tbody>
+            <tr><td><span class="dot" style="background:#22d3ee"></span>acme-prod</td><td><span style="color:var(--muted)">enterprise</span></td><td class="tab" style="text-align:right">128,402</td><td class="tab" style="text-align:right">3.42 M</td><td class="tab" style="text-align:right; color:#f472b6;">$4.18</td><td class="tab" style="text-align:right">680 ms</td></tr>
+            <tr><td><span class="dot" style="background:#818cf8"></span>globex-research</td><td><span style="color:var(--muted)">pro</span></td><td class="tab" style="text-align:right">82,194</td><td class="tab" style="text-align:right">2.81 M</td><td class="tab" style="text-align:right; color:#f472b6;">$3.42</td><td class="tab" style="text-align:right">810 ms</td></tr>
+            <tr><td><span class="dot" style="background:#34d399"></span>parker-mobile</td><td><span style="color:var(--muted)">pro</span></td><td class="tab" style="text-align:right">61,803</td><td class="tab" style="text-align:right">1.94 M</td><td class="tab" style="text-align:right; color:#f472b6;">$2.07</td><td class="tab" style="text-align:right">540 ms</td></tr>
+            <tr><td><span class="dot" style="background:#fbbf24"></span>nexus-internal</td><td><span style="color:var(--muted)">enterprise</span></td><td class="tab" style="text-align:right">48,229</td><td class="tab" style="text-align:right">1.51 M</td><td class="tab" style="text-align:right; color:#f472b6;">$1.85</td><td class="tab" style="text-align:right">920 ms</td></tr>
+            <tr><td><span class="dot" style="background:#f472b6"></span>orbital-agents</td><td><span style="color:var(--muted)">free</span></td><td class="tab" style="text-align:right">14,802</td><td class="tab" style="text-align:right">389 K</td><td class="tab" style="text-align:right; color:#f472b6;">$0.49</td><td class="tab" style="text-align:right">1.40 s</td></tr>
+            <tr><td><span class="dot" style="background:#fb7185"></span>krios-ml</td><td><span style="color:var(--muted)">pro</span></td><td class="tab" style="text-align:right">9,612</td><td class="tab" style="text-align:right">218 K</td><td class="tab" style="text-align:right; color:#f472b6;">$0.31</td><td class="tab" style="text-align:right">2.10 s</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div><div class="panel-title">Live event stream</div><div class="panel-meta">tail · errors + warnings</div></div><span class="tb-pill live"><span class="dot"></span>streaming</span></div>
+        <div class="errlog">
+          <div class="err-line"><span class="t">15:02:14.831</span> <span class="lvl-warn">WARN</span> <span class="src">circuit_breaker</span> bedrock-haiku-v3: half-open after 30s cooldown</div>
+          <div class="err-line"><span class="t">15:02:11.103</span> <span class="lvl-err">ERR </span> <span class="src">upstream</span> openai/4xx tenant=krios-ml: <span style="color:var(--ink-2)">429 rate_limit</span></div>
+          <div class="err-line"><span class="t">15:02:08.219</span> <span class="lvl-info">INFO</span> <span class="src">router</span> cache hit · key=embed:eb7a... saved 142 ms</div>
+          <div class="err-line"><span class="t">15:02:06.451</span> <span class="lvl-info">INFO</span> <span class="src">router</span> tenant=acme-prod model=claude-sonnet-4-6 tokens=3,184 cost=$0.012</div>
+          <div class="err-line"><span class="t">15:02:03.092</span> <span class="lvl-warn">WARN</span> <span class="src">quota</span> tenant=orbital-agents at 92% of monthly tokens</div>
+          <div class="err-line"><span class="t">15:02:00.488</span> <span class="lvl-info">INFO</span> <span class="src">router</span> failover anthropic→bedrock 502 in 200 ms · retry succeeded</div>
+          <div class="err-line"><span class="t">15:01:57.214</span> <span class="lvl-info">INFO</span> <span class="src">router</span> tenant=globex-research stream began · 1,420 tok est.</div>
+          <div class="err-line"><span class="t">15:01:54.011</span> <span class="lvl-info">INFO</span> <span class="src">router</span> cache hit · key=embed:b9c2... saved 138 ms</div>
+          <div class="err-line"><span class="t">15:01:50.802</span> <span class="lvl-err">ERR </span> <span class="src">policy</span> blocked: pii_in_prompt · tenant=nexus-internal</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
