@@ -63,7 +63,7 @@ A pre-built Grafana dashboard ships in `observability/` — visualises real-time
 ## Run locally
 
 ```bash
-git clone https://github.com/phantomdev0826/bastion-gateway
+git clone https://github.com/vltech55/bastion-gateway
 cd bastion-gateway
 cp .env.example .env       # add OPENAI_API_KEY + ANTHROPIC_API_KEY (+ AWS creds for Bedrock)
 docker compose up -d --build
