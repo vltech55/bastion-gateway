@@ -2,7 +2,7 @@
 
 # Bastion — Observable, Cost-Aware LLM Gateway
 
-**One OpenAI-compatible API in front of OpenAI, Anthropic, and AWS Bedrock. Weighted routing, prefix cache, span-waterfall traces, per-tenant quotas, Prometheus + Grafana.**
+**One OpenAI-compatible API in front of OpenAI, Anthropic, and AWS Bedrock. Ordered-fallback routing with per-provider circuit breakers, deterministic-request prefix cache, per-key token-bucket rate limiting, full Prometheus + Grafana observability, Kubernetes manifests.**
 
 ![Bastion feature poster](docs/screenshots/feature.png)
 
