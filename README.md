@@ -25,7 +25,7 @@ A pre-built Grafana dashboard ships in `observability/` — visualises real-time
 ## Features
 
 - **Three providers, one API** — adapters for Anthropic, OpenAI, and AWS Bedrock (`boto3`). Same trace shape, same schema, config-only swap per tenant or per model.
-- **Weighted, round-robin, fallback routing** — declarative rules table; sticky session by `end_user_session`; circuit breakers on provider error rate.
+- **Ordered fallback routing with per-provider circuit breakers** — declarative candidate chain per model alias (e.g. `default-smart` → Anthropic Sonnet → Bedrock → OpenAI). Breakers open after N failures with a cooldown, then half-open; on a `ProviderUnavailableError` the gateway transparently tries the next candidate.
 - **Prefix cache** — stable hash of the prompt prefix → cached responses in Redis with TTL and per-tenant scopes. **71 % typical hit rate** on demo workload; $4,108 saved MTD in the seeded dataset.
 - **Span-waterfall tracing** — every request decomposed into spans (auth, quota, router.match, cache lookup, provider call, usage record); persisted to Postgres, visible in the showcase UI.
 - **Per-tenant quotas + budgets** — token-bucket rate limit + monthly $ budget; anomaly detection auto-pages when a tenant spend deviates from baseline.
