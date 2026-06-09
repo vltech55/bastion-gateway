@@ -1,8 +1,8 @@
 <div align="center">
 
-# Bastion — Observable, Cost-Aware LLM Gateway
+# Bastion
 
-**One OpenAI-compatible API in front of OpenAI, Anthropic, and AWS Bedrock. Ordered-fallback routing with per-provider circuit breakers, deterministic-request prefix cache, per-key token-bucket rate limiting, full Prometheus + Grafana observability, Kubernetes manifests.**
+**Observable, cost-aware LLM gateway. One OpenAI-compatible API in front of OpenAI, Anthropic, and AWS Bedrock — with ordered-fallback routing, per-provider circuit breakers, a deterministic-request prefix cache, per-key token-bucket rate limiting, full Prometheus + Grafana observability, and Kubernetes manifests.**
 
 ![Bastion feature poster](docs/screenshots/feature.png)
 
@@ -16,17 +16,32 @@
 
 </div>
 
-## What it does
+---
 
-Bastion is a standalone service that sits between applications and LLM providers. Applications call **one unified OpenAI-compatible API**; the gateway routes by tenant + model rules, applies prefix caching, tracks cost and latency per span, falls back to alternate providers on health failure, and emits Prometheus metrics + structured logs.
+## Table of Contents
 
-A pre-built Grafana dashboard ships in `observability/` — visualises real-time RPS, p50 / p95 latency, error rate, prefix-cache hit rate, per-tenant spend, and a stacked-area by provider.
+- [Overview](#overview)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Architecture](#architecture)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Author](#author)
+- [License](#license)
+
+## Overview
+
+Bastion is a standalone service that sits between applications and LLM providers. Applications call one unified OpenAI-compatible API; the gateway routes by tenant + model rules, applies prefix caching, tracks cost and latency per span, falls back to alternate providers on health failure, and emits Prometheus metrics + structured logs.
+
+A pre-built Grafana dashboard ships in `observability/` — visualizes real-time RPS, p50 / p95 latency, error rate, prefix-cache hit rate, per-tenant spend, and a stacked-area by provider.
 
 ## Features
 
 - **Three providers, one API** — adapters for Anthropic, OpenAI, and AWS Bedrock (`boto3`). Same trace shape, same schema, config-only swap per tenant or per model.
 - **Ordered fallback routing with per-provider circuit breakers** — declarative candidate chain per model alias (e.g. `default-smart` → Anthropic Sonnet → Bedrock → OpenAI). Breakers open after N failures with a cooldown, then half-open; on a `ProviderUnavailableError` the gateway transparently tries the next candidate.
-- **Prefix cache** — stable hash of the prompt prefix → cached responses in Redis with TTL and per-tenant scopes. **71 % typical hit rate** on demo workload; $4,108 saved MTD in the seeded dataset.
+- **Prefix cache** — stable hash of the prompt prefix → cached responses in Redis with TTL and per-tenant scopes. 71 % typical hit rate on demo workload; $4,108 saved MTD in the seeded dataset.
 - **Span-waterfall tracing** — every request decomposed into spans (auth, quota, router.match, cache lookup, provider call, usage record); persisted to Postgres, visible in the showcase UI.
 - **Per-tenant quotas + budgets** — token-bucket rate limit + monthly $ budget; anomaly detection auto-pages when a tenant spend deviates from baseline.
 - **Observable by default** — `/metrics` Prometheus endpoint, structured JSON logs with correlation IDs, a Grafana dashboard JSON exported in `observability/`, Kubernetes manifests in `k8s/` (Deployment + HPA + ServiceMonitor).
@@ -48,22 +63,22 @@ A pre-built Grafana dashboard ships in `observability/` — visualises real-time
 </tr>
 </table>
 
-## Stack
+## Tech Stack
 
-| Layer        | Tech |
-|--------------|------|
-| Gateway      | Python 3.11, FastAPI, sse-starlette (stream pass-through) |
-| Cache        | Redis (prefix cache + TTL + per-tenant scopes) |
-| Providers    | Anthropic SDK, OpenAI SDK, AWS Bedrock via `boto3` |
-| Persistence  | Postgres 16, SQLAlchemy 2 + asyncpg, Alembic |
-| Observability| Prometheus `prometheus-client`, Grafana dashboard JSON, structlog with correlation IDs |
-| Resilience   | Tenacity retries + circuit breakers, token-bucket rate limits |
-| Ops          | Docker Compose, Kubernetes manifests (`k8s/`) — Deployment + HPA + ServiceMonitor |
+| Layer         | Technology |
+|---------------|------------|
+| Gateway       | Python 3.11, FastAPI, sse-starlette (stream pass-through) |
+| Cache         | Redis (prefix cache + TTL + per-tenant scopes) |
+| Providers     | Anthropic SDK, OpenAI SDK, AWS Bedrock via `boto3` |
+| Persistence   | Postgres 16, SQLAlchemy 2 + asyncpg, Alembic |
+| Observability | Prometheus `prometheus-client`, Grafana dashboard JSON, structlog with correlation IDs |
+| Resilience    | Tenacity retries + circuit breakers, token-bucket rate limits |
+| Operations    | Docker Compose, Kubernetes manifests (`k8s/`) — Deployment + HPA + ServiceMonitor |
 
-## Run locally
+## Installation
 
 ```bash
-git clone https://github.com/vltech55/bastion-gateway
+git clone https://github.com/vltech55/bastion-gateway.git
 cd bastion-gateway
 cp .env.example .env       # add OPENAI_API_KEY + ANTHROPIC_API_KEY (+ AWS creds for Bedrock)
 docker compose up -d --build
@@ -125,7 +140,7 @@ Same shape as OpenAI's API — drop-in for any OpenAI SDK client (`OPENAI_BASE_U
                                                 └─────────────────┘
 ```
 
-## Tests
+## Testing
 
 ```bash
 docker compose exec backend pytest
@@ -133,7 +148,7 @@ docker compose exec backend pytest
 
 Uses `fakeredis` to test prefix-cache semantics without a live Redis. Covers routing-rule precedence, circuit-breaker open/half-open transitions, and the OpenAI-compatible request/response translation per provider.
 
-## Deploy to Kubernetes
+## Deployment
 
 ```bash
 kubectl apply -k k8s/overlays/prod
@@ -141,6 +156,12 @@ kubectl apply -k k8s/overlays/prod
 
 Manifests include a Deployment, HPA (CPU + request-rate), Service, ServiceMonitor for Prometheus Operator, and a ConfigMap with the routing rules. See [`k8s/README.md`](k8s/README.md) for the full setup.
 
+## Author
+
+**Vlad L.** — independent senior engineer specializing in production-grade LLM systems (RAG, agents, gateways, multi-tenant SaaS).
+
+[![GitHub](https://img.shields.io/badge/GitHub-vltech55-181717?logo=github)](https://github.com/vltech55)
+
 ## License
 
-MIT
+[MIT](LICENSE) © Vlad L.
